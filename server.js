@@ -23,6 +23,7 @@ const CONFIG = {
     allowedOrigins: ['http://localhost:3000', 'http://127.0.0.1:3000', 'https://fufud.cc', 'https://www.fufud.cc', 'http://194.41.36.137:3000'],
     rateLimitWindow: 60000, // 1分钟
     rateLimitMax: 60, // 每分钟最大请求数（1核1G服务器建议）
+    globalMaxConnections: 50, // 全局最大并发连接数（1核1G建议）
     // 管理员配置 - 支持多种IP格式
     adminIPs: [
         '175.4.244.62',           // 原始格式
@@ -944,12 +945,40 @@ loadGuestbookData();
 
 // 速率限制提示页面
 function getRateLimitPage() {
+    return getLimitPage('rate');
+}
+
+// 服务器繁忙页面
+function getBusyPage() {
+    return getLimitPage('busy');
+}
+
+// 通用限制页面
+function getLimitPage(type) {
+    const isRateLimit = type === 'rate';
+    const title = isRateLimit ? '大福玩具房 - 休息一下' : '大福玩具房 - 服务器繁忙';
+    const icon = isRateLimit ? '🎀' : '😴';
+    const heading = isRateLimit ? '哎呀，人太多啦！' : '服务器爆满啦！';
+    const message = isRateLimit 
+        ? '大福的玩具房现在有点挤<br>仙子伊布正在努力接待中...' 
+        : '太多人同时访问啦<br>仙子伊布忙不过来了...';
+    const countdownText = isRateLimit ? '请稍等 <span id="timer">60</span> 秒' : '请稍后再试';
+    const tips = isRateLimit 
+        ? `<span>💡 小贴士：</span>
+            <span>• 每分钟最多 60 次访问</span>
+            <span>• 稍后会自动恢复</span>
+            <span>• 感谢你的耐心等待~</span>`
+        : `<span>💡 小贴士：</span>
+            <span>• 服务器最大承载 50 人</span>
+            <span>• 请稍后再访问</span>
+            <span>• 感谢你的理解~</span>`;
+    
     return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大福玩具房 - 休息一下</title>
+    <title>${title}</title>
     <style>
         * {
             margin: 0;
@@ -977,15 +1006,21 @@ function getRateLimitPage() {
             width: 100%;
         }
         
-        .sylveon {
+        .icon {
             font-size: 5rem;
             margin-bottom: 20px;
-            animation: bounce 2s infinite;
+            animation: ${isRateLimit ? 'bounce' : 'shake'} 2s infinite;
         }
         
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-15px); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
         }
         
         h1 {
@@ -1011,13 +1046,6 @@ function getRateLimitPage() {
             margin-bottom: 20px;
         }
         
-        .timer {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #ff6b9d;
-            margin: 20px 0;
-        }
-        
         .tips {
             background: #fff5f7;
             padding: 15px 20px;
@@ -1037,7 +1065,7 @@ function getRateLimitPage() {
                 padding: 40px 25px;
             }
             
-            .sylveon {
+            .icon {
                 font-size: 4rem;
             }
             
@@ -1049,20 +1077,23 @@ function getRateLimitPage() {
 </head>
 <body>
     <div class="container">
-        <div class="sylveon">🎀</div>
-        <h1>哎呀，人太多啦！</h1>
-        <p>大福的玩具房现在有点挤<br>仙子伊布正在努力接待中...</p>
-        <div class="countdown">⏰ 请稍等 <span id="timer">60</span> 秒</div>
+        <div class="icon">${icon}</div>
+        <h1>${heading}</h1>
+        <p>${message}</p>
+        <div class="countdown">⏰ ${countdownText}</div>
         <p style="font-size: 0.9rem; color: #999;">自动刷新中...</p>
         <div class="tips">
-            <span>💡 小贴士：</span>
-            <span>• 每分钟最多 60 次访问</span>
-            <span>• 稍后会自动恢复</span>
-            <span>• 感谢你的耐心等待~</span>
+            ${tips}
         </div>
     </div>
     
     <script>
+        // 5秒后自动尝试刷新
+        setTimeout(() => {
+            location.reload();
+        }, 5000);
+        
+        ${isRateLimit ? `
         let seconds = 60;
         const timerEl = document.getElementById('timer');
         
@@ -1072,13 +1103,9 @@ function getRateLimitPage() {
                 seconds = 60;
                 location.reload();
             }
-            timerEl.textContent = seconds;
+            if (timerEl) timerEl.textContent = seconds;
         }, 1000);
-        
-        // 5秒后自动尝试刷新
-        setTimeout(() => {
-            location.reload();
-        }, 5000);
+        ` : ''}
     </script>
 </body>
 </html>`;
@@ -1132,9 +1159,31 @@ function getClientIP(req) {
            'unknown';
 }
 
+// 全局连接计数器
+let activeConnections = 0;
+
 // 创建HTTP服务器
 const server = http.createServer((req, res) => {
     const clientIP = getClientIP(req);
+    
+    // 全局并发限制检查
+    if (activeConnections >= CONFIG.globalMaxConnections) {
+        res.writeHead(503, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(getBusyPage());
+        log(`服务器繁忙，拒绝连接: ${clientIP} (当前连接: ${activeConnections})`, 'error');
+        return;
+    }
+    
+    // 增加连接计数
+    activeConnections++;
+    
+    // 请求结束时减少计数
+    res.on('finish', () => {
+        activeConnections--;
+    });
+    res.on('close', () => {
+        activeConnections--;
+    });
     
     // 设置安全响应头
     setSecurityHeaders(res);
@@ -1144,6 +1193,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(429, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(getRateLimitPage());
         log(`速率限制触发: ${clientIP}`, 'error');
+        activeConnections--;
         return;
     }
     
