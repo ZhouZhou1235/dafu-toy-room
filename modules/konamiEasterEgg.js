@@ -39,7 +39,9 @@
         // 等待大门页面加载完成
         const initBowListener = () => {
             const gateTitle = document.querySelector('.gate-title');
-            if (!gateTitle) {
+            const gateHeader = document.querySelector('.gate-header');
+            
+            if (!gateTitle || !gateHeader) {
                 // 如果还没加载，稍后重试
                 setTimeout(initBowListener, 500);
                 return;
@@ -50,10 +52,6 @@
             // 处理点击/触摸的函数
             const handleTap = (e) => {
                 if (isGameActive) return;
-                
-                // 阻止默认行为，防止触发其他点击事件
-                e.preventDefault();
-                e.stopPropagation();
                 
                 const now = Date.now();
                 
@@ -76,11 +74,35 @@
                 }
             };
             
-            // 同时绑定 click 和 touchend 事件
-            gateTitle.addEventListener('click', handleTap);
-            gateTitle.addEventListener('touchend', handleTap, { passive: false });
+            // 创建一个透明的覆盖层来捕获点击事件
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 10;
+                cursor: pointer;
+                -webkit-tap-highlight-color: transparent;
+            `;
             
-            // 添加视觉提示
+            // 确保 gate-header 是相对定位
+            if (getComputedStyle(gateHeader).position === 'static') {
+                gateHeader.style.position = 'relative';
+            }
+            
+            gateHeader.appendChild(overlay);
+            
+            // 绑定点击事件到覆盖层
+            overlay.addEventListener('click', handleTap);
+            overlay.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handleTap(e);
+            }, { passive: false });
+            
+            // 也绑定到标题本身作为后备
+            gateTitle.addEventListener('click', handleTap);
             gateTitle.style.cursor = 'pointer';
             gateTitle.style.userSelect = 'none';
             gateTitle.style.webkitUserSelect = 'none';
