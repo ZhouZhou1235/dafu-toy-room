@@ -731,7 +731,16 @@
             let adminIsLoggedIn = false;
             let adminCurrentTab = 'pending';
             
-            document.getElementById('adminTrigger').addEventListener('click', function() {
+            // 确保元素存在
+            const adminTrigger = document.getElementById('adminTrigger');
+            const adminPanel = document.getElementById('adminPanel');
+            
+            if (!adminTrigger || !adminPanel) {
+                console.error('管理面板元素未找到');
+                return;
+            }
+            
+            adminTrigger.addEventListener('click', function() {
                 const now = Date.now();
                 if (now - adminLastClickTime > 5000) adminClickCount = 0;
                 adminClickCount++;
@@ -740,7 +749,8 @@
                 
                 if (adminClickCount >= 10) {
                     adminClickCount = 0;
-                    document.getElementById('adminPanel').classList.add('show');
+                    adminPanel.classList.add('show');
+                    console.log('管理面板已显示');
                 }
             });
             
