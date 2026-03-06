@@ -150,6 +150,7 @@
                 z-index: 99999;
                 overflow: hidden;
                 cursor: crosshair;
+                touch-action: none;
             }
             
             .konami-score {
@@ -213,6 +214,8 @@
                 animation: sylveon-fall-anim linear;
                 filter: drop-shadow(0 5px 10px rgba(255, 107, 157, 0.4));
                 transition: transform 0.1s;
+                z-index: 100010;
+                touch-action: manipulation;
             }
             
             .sylveon-fall:hover {
