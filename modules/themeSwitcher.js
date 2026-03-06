@@ -7,8 +7,8 @@
 (function() {
     'use strict';
     
-    // 彩虹 SVG
-    const PALETTE_SVG = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 18 0"/><path d="M6 12a6 6 0 0 1 12 0"/><path d="M9 12a3 3 0 0 1 6 0"/></svg>';
+    // 调色板 Emoji
+    const THEME_ICON = '🎨';
     
     // 主题配置
     const THEMES = {
@@ -78,7 +78,7 @@
         switcher.className = 'theme-switcher';
         switcher.innerHTML = `
             <button class="theme-btn" id="themeBtn" title="切换主题">
-                ${PALETTE_SVG}
+                ${THEME_ICON}
             </button>
             <div class="theme-panel" id="themePanel">
                 <div class="theme-option ${currentTheme === 'pink' ? 'active' : ''}" data-theme="pink">
@@ -134,9 +134,9 @@
                 100% { transform: scale(1) rotate(0deg); opacity: 1; }
             }
             
-            .theme-btn svg {
-                width: 28px;
-                height: 28px;
+            .theme-btn {
+                font-size: 2rem;
+                line-height: 1;
             }
             
             .theme-btn:hover {
@@ -229,9 +229,8 @@
                     height: 50px;
                 }
                 
-                .theme-btn svg {
-                    width: 24px;
-                    height: 24px;
+                .theme-btn {
+                    font-size: 1.5rem;
                 }
                 
                 .theme-panel {
