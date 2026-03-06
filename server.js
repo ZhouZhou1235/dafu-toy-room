@@ -88,10 +88,7 @@ function loadStats() {
                         fortune: 0,
                         blessing: 0,
                         aiChat: 0,
-                        whackAMole: 0,
-                        luckyWheel: 0,
-                        passwordGen: 0,
-                        moodDiary: 0
+                        whackAMole: 0
                     }
                 };
             }
@@ -137,10 +134,7 @@ function recordVisit(clientIP) {
                 fortune: 0,
                 blessing: 0,
                 aiChat: 0,
-                whackAMole: 0,
-                luckyWheel: 0,
-                passwordGen: 0,
-                moodDiary: 0
+                whackAMole: 0
             }
         };
     }
@@ -162,12 +156,18 @@ function recordVisit(clientIP) {
 
 // 记录模块使用
 function recordModuleUsage(moduleName) {
-    if (serverStats.today.moduleUsage.hasOwnProperty(moduleName)) {
-        serverStats.today.moduleUsage[moduleName]++;
-        serverStats.total.moduleUsage[moduleName]++;
-        serverStats.total.lastUpdated = new Date().toISOString();
-        saveStats();
+    // 如果模块不存在，自动初始化
+    if (!serverStats.today.moduleUsage.hasOwnProperty(moduleName)) {
+        serverStats.today.moduleUsage[moduleName] = 0;
     }
+    if (!serverStats.total.moduleUsage.hasOwnProperty(moduleName)) {
+        serverStats.total.moduleUsage[moduleName] = 0;
+    }
+    
+    serverStats.today.moduleUsage[moduleName]++;
+    serverStats.total.moduleUsage[moduleName]++;
+    serverStats.total.lastUpdated = new Date().toISOString();
+    saveStats();
 }
 
 // 获取统计数据的API

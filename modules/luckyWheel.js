@@ -154,11 +154,13 @@
     // 显示结果
     function showResult(rotation) {
         // 指针在顶部（-90度位置），需要调整计算
+        // 转盘顺时针旋转，指针指向的选项需要反向计算
         const normalizedRotation = (rotation % 360 + 360) % 360;
         const anglePerOption = 360 / state.options.length;
-        // 指针指向的是旋转角度的反方向，且偏移90度
-        const pointerAngle = (360 - normalizedRotation + 90) % 360;
-        const selectedIndex = Math.floor(pointerAngle / anglePerOption) % state.options.length;
+        // 指针在顶部（270度位置），需要加上偏移
+        const pointerOffset = 270;
+        const effectiveRotation = (normalizedRotation + pointerOffset) % 360;
+        const selectedIndex = Math.floor(effectiveRotation / anglePerOption) % state.options.length;
         const selected = state.options[selectedIndex];
         
         elements.result.innerHTML = `
