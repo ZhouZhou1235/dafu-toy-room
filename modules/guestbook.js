@@ -325,15 +325,40 @@
                 cursor: pointer;
                 box-shadow: 0 5px 20px rgba(255, 107, 157, 0.4);
                 transition: transform 0.3s, box-shadow 0.3s;
-                z-index: 999;
+                z-index: 9999 !important;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                animation: guestbook-btn-appear 0.5s ease-out;
+            }
+            
+            @keyframes guestbook-btn-appear {
+                0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+                70% { transform: scale(1.1) rotate(10deg); }
+                100% { transform: scale(1) rotate(0deg); opacity: 1; }
             }
             
             .guestbook-float-btn:hover {
                 transform: scale(1.1) rotate(-10deg);
                 box-shadow: 0 8px 30px rgba(255, 107, 157, 0.5);
+            }
+            
+            .guestbook-float-btn::after {
+                content: '';
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                background: inherit;
+                opacity: 0.4;
+                animation: guestbook-pulse 2s infinite;
+                z-index: -1;
+            }
+            
+            @keyframes guestbook-pulse {
+                0% { transform: scale(1); opacity: 0.4; }
+                50% { transform: scale(1.3); opacity: 0; }
+                100% { transform: scale(1); opacity: 0; }
             }
             
             /* 移动端适配 */

@@ -11,7 +11,7 @@
     const THEMES = {
         pink: {
             name: '粉色系',
-            icon: '🎀',
+            icon: '�',
             colors: {
                 '--primary-color': '#ff6b9d',
                 '--primary-light': '#ffc2d1',
