@@ -21,8 +21,8 @@ if errorlevel 1 (
 echo ✅ 推送成功！
 echo.
 
-echo 📥 正在连接 VPS 并更新...
-ssh root@194.41.36.137 "cd /root/dafu-toy-room && git pull origin master && pm2 restart dafu-toy-room"
+echo 📥 正在连接 VPS 并强制同步...
+ssh root@194.41.36.137 "cd /root/dafu-toy-room && git fetch origin && git reset --hard origin/master && pm2 restart dafu-toy-room"
 if errorlevel 1 (
     echo.
     echo ❌ VPS 更新失败！

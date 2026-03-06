@@ -20,32 +20,49 @@
     let lastClickTime = 0;
     let isTriggered = false;
     
-    // 创建手机端彩蛋按钮
-    function createMobileEasterEgg() {
+    // 检测是否为移动设备
+    function isMobile() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+    
+    // 创建彩蛋按钮（电脑手机都显示）
+    function createEasterEggButton() {
         // 延迟执行，确保 DOM 已准备好
         setTimeout(() => {
             const btn = document.createElement('div');
-            btn.className = 'easter-egg-mobile';
+            btn.className = 'easter-egg-btn';
             btn.innerHTML = '🎉';
-            btn.title = '点我5次有惊喜~';
+            
+            // 根据设备显示不同提示
+            if (isMobile()) {
+                btn.title = '点我5次有惊喜~';
+            } else {
+                btn.title = '试试输入 ↑↑↓↓←→←→BA';
+            }
             
             // 插入到大门的猫咪下方
             const gateFooter = document.querySelector('.gate-footer');
             if (gateFooter) {
                 gateFooter.insertBefore(btn, gateFooter.firstChild);
-                addMobileStyles();
-                bindMobileEvents(btn);
-                console.log('🎉 手机彩蛋按钮已创建');
+                addButtonStyles();
+                
+                // 只有手机端绑定点击事件
+                if (isMobile()) {
+                    bindMobileEvents(btn);
+                    console.log('🎉 彩蛋按钮已创建（手机端-可点击）');
+                } else {
+                    console.log('🎉 彩蛋按钮已创建（电脑端-仅显示）');
+                }
             } else {
                 console.log('⚠️ 未找到 .gate-footer，彩蛋按钮未创建');
             }
         }, 1000); // 延迟1秒确保DOM加载完成
     }
     
-    // 添加手机端样式
-    function addMobileStyles() {
+    // 添加按钮样式
+    function addButtonStyles() {
         const styles = `
-            .easter-egg-mobile {
+            .easter-egg-btn {
                 font-size: 2.5rem;
                 cursor: pointer;
                 display: inline-block;
@@ -55,7 +72,7 @@
                 filter: drop-shadow(0 3px 5px rgba(0,0,0,0.2));
             }
             
-            .easter-egg-mobile:hover {
+            .easter-egg-btn:hover {
                 transform: scale(1.2);
             }
             
@@ -64,7 +81,7 @@
                 50% { transform: translateY(-10px) rotate(5deg); }
             }
             
-            .easter-egg-mobile.clicked {
+            .easter-egg-btn.clicked {
                 animation: easter-egg-spin 0.5s ease-out;
             }
             
@@ -316,13 +333,16 @@
     
     // 初始化
     function init() {
-        // 延迟创建手机按钮，确保大门已加载
-        createMobileEasterEgg();
+        // 创建彩蛋按钮（电脑手机都显示）
+        createEasterEggButton();
         bindKonamiCode();
         
         console.log('🎮 Konami彩蛋模块已加载！');
-        console.log('💡 电脑：输入 ↑↑↓↓←→←→BA');
-        console.log('💡 手机：点击大门上的 🎉 5次');
+        if (isMobile()) {
+            console.log('💡 手机端：点击大门上的 🎉 5次触发彩蛋');
+        } else {
+            console.log('💡 电脑端：输入 ↑↑↓↓←→←→BA 触发彩蛋');
+        }
     }
     
     // 注册模块
