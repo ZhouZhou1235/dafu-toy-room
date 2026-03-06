@@ -7,8 +7,8 @@
 (function() {
     'use strict';
     
-    // 简化的调色板 SVG
-    const PALETTE_SVG = '<svg viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="2"/></svg>';
+    // 彩虹 SVG
+    const PALETTE_SVG = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 18 0"/><path d="M6 12a6 6 0 0 1 12 0"/><path d="M9 12a3 3 0 0 1 6 0"/></svg>';
     
     // 主题配置
     const THEMES = {
