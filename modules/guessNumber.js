@@ -129,6 +129,9 @@
         celebrate();
         
         showRestartButton();
+        
+        // 记录统计
+        recordStats();
     }
     
     // 处理失败
@@ -141,6 +144,9 @@
         );
         
         showRestartButton();
+        
+        // 记录统计
+        recordStats();
     }
     
     // 显示结果
