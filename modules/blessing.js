@@ -35,8 +35,8 @@
     const CONFIG = {
         // API端点（用于生成祝福语，防止词穷）
         apiEndpoint: '/api/blessing',
-        // 是否优先使用API（当前使用本地福福风格数据库）
-        useApiFirst: false,
+        // 70%概率使用本地自定义福语，30%概率使用AI生成（防止词穷）
+        localProbability: 0.7,
         // API超时时间
         apiTimeout: 5000
     };
@@ -72,18 +72,22 @@
         
         let blessing = null;
         
-        // 尝试从API获取
-        if (CONFIG.useApiFirst) {
+        // 70%概率使用本地自定义福语，30%概率使用AI生成
+        const useLocal = Math.random() < CONFIG.localProbability;
+        
+        if (useLocal) {
+            // 使用本地福福风格福语
+            console.log('使用本地福福风格福语');
+            blessing = getRandomBlessing();
+        } else {
+            // 尝试从API获取AI生成的福语
+            console.log('尝试使用AI生成福语');
             try {
                 blessing = await fetchBlessingFromAPI();
             } catch (error) {
-                console.log('API获取失败，使用本地数据库:', error.message);
+                console.log('API获取失败，回退到本地数据库:', error.message);
+                blessing = getRandomBlessing();
             }
-        }
-        
-        // 如果API失败或禁用，使用本地数据库
-        if (!blessing) {
-            blessing = getRandomBlessing();
         }
         
         // 显示结果

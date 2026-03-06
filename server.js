@@ -390,6 +390,134 @@ function proxyDeepSeekAPI(req, res) {
     });
 }
 
+// 生成祝福语（使用DeepSeek AI）
+function generateBlessing(req, res) {
+    log('收到祝福语生成请求');
+    
+    // 福福风格的祝福语提示词
+    const systemPrompt = `你是大福玩具房的"福福"，一个可爱又调皮的送福小精灵。
+你的说话风格：
+1. 喜欢用"福福"自称
+2. 经常使用谐音梗，特别是"伊布"（宝可梦）相关的梗，比如"伊起享福"
+3. 语气活泼可爱，经常使用 Emoji
+4. 祝福语要包含"福"字
+5. 每句祝福语后面要有一句简短的解释说明
+
+输出格式必须是JSON：
+{
+  "text": "福语内容（15字以内）",
+  "emoji": "一个相关的emoji",
+  "desc": "解释说明（20字以内）"
+}`;
+
+    const userPrompt = '请生成一句福福风格的祝福语，要有创意，可以玩谐音梗！';
+    
+    // 构建DeepSeek API请求
+    const apiRequestBody = JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+        ],
+        max_tokens: 200,
+        temperature: 0.9,
+        stream: false
+    });
+    
+    const options = {
+        hostname: CONFIG.apiEndpoint,
+        port: 443,
+        path: CONFIG.apiPath,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${CONFIG.apiKey}`,
+            'Content-Length': Buffer.byteLength(apiRequestBody),
+            'Accept': 'application/json'
+        },
+        timeout: 10000 // 10秒超时
+    };
+    
+    log('正在向DeepSeek请求生成祝福语...');
+    
+    const apiReq = https.request(options, (apiRes) => {
+        let responseData = '';
+        
+        apiRes.on('data', (chunk) => {
+            responseData += chunk;
+        });
+        
+        apiRes.on('end', () => {
+            try {
+                const data = JSON.parse(responseData);
+                
+                if (data.choices && data.choices[0] && data.choices[0].message) {
+                    const aiResponse = data.choices[0].message.content;
+                    log('AI生成成功，正在解析...');
+                    
+                    // 尝试解析JSON
+                    let blessing;
+                    try {
+                        // 提取JSON部分
+                        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+                        if (jsonMatch) {
+                            blessing = JSON.parse(jsonMatch[0]);
+                        } else {
+                            throw new Error('No JSON found');
+                        }
+                    } catch (e) {
+                        // 如果解析失败，使用默认格式
+                        log('JSON解析失败，使用默认格式', 'error');
+                        blessing = {
+                            text: aiResponse.substring(0, 15) || '福福祝你福气满满',
+                            emoji: '🎀',
+                            desc: '福福送你的专属祝福'
+                        };
+                    }
+                    
+                    res.writeHead(200, {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    });
+                    res.end(JSON.stringify({ blessing }));
+                    log('祝福语生成成功', 'success');
+                } else {
+                    throw new Error('Invalid API response');
+                }
+            } catch (error) {
+                log(`生成失败: ${error.message}`, 'error');
+                res.writeHead(500, {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                });
+                res.end(JSON.stringify({ error: '生成失败' }));
+            }
+        });
+    });
+    
+    apiReq.on('error', (error) => {
+        log(`API请求错误: ${error.message}`, 'error');
+        res.writeHead(500, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        });
+        res.end(JSON.stringify({ error: 'API请求失败' }));
+    });
+    
+    apiReq.on('timeout', () => {
+        log('祝福语生成超时', 'error');
+        apiReq.destroy();
+        res.writeHead(504, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        });
+        res.end(JSON.stringify({ error: '请求超时' }));
+    });
+    
+    apiReq.write(apiRequestBody);
+    apiReq.end();
+}
+
 // 创建HTTP服务器
 const server = http.createServer((req, res) => {
     // 设置CORS头
@@ -412,6 +540,12 @@ const server = http.createServer((req, res) => {
     // API路由
     if (pathname === '/api/chat' && req.method === 'POST') {
         proxyDeepSeekAPI(req, res);
+        return;
+    }
+    
+    // 祝福语生成API
+    if (pathname === '/api/blessing' && req.method === 'POST') {
+        generateBlessing(req, res);
         return;
     }
     
