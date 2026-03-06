@@ -920,7 +920,13 @@ function isBlacklisted(ip) {
 // 检查是否是管理员
 function isAdmin(req) {
     const clientIP = getClientIP(req);
-    return CONFIG.adminIPs.includes(clientIP);
+    // 处理IPv6映射的IPv4地址
+    const normalizedIP = clientIP.replace(/^::ffff:/, '');
+    console.log(`[Admin Check] Client IP: ${clientIP}, Normalized: ${normalizedIP}`);
+    console.log(`[Admin Check] Whitelist: ${JSON.stringify(CONFIG.adminIPs)}`);
+    const isAdminUser = CONFIG.adminIPs.includes(clientIP) || CONFIG.adminIPs.includes(normalizedIP);
+    console.log(`[Admin Check] Result: ${isAdminUser}`);
+    return isAdminUser;
 }
 
 // 验证管理员密码

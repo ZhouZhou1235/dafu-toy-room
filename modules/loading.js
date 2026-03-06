@@ -79,17 +79,26 @@
                 50% { transform: translateY(-10px) scale(1.1); }
             }
             
-            /* 蓄力动画 */
+            /* 蓄力动画 - 只在横幅内弹跳 */
             .sylveon-bounce.charging {
-                animation: sylveon-charge 0.8s ease-in-out;
+                animation: sylveon-charge 0.6s ease-in-out 2;
             }
             
             @keyframes sylveon-charge {
                 0% { transform: translateY(0) scale(1); }
-                30% { transform: translateY(5px) scale(0.9); }
-                50% { transform: translateY(8px) scale(0.85); }
-                70% { transform: translateY(5px) scale(0.9); }
-                100% { transform: translateY(-100px) scale(1.2); }
+                50% { transform: translateY(15px) scale(0.85); }
+                100% { transform: translateY(0) scale(1); }
+            }
+            
+            /* 准备起飞的动画 */
+            .loading-banner.ready-to-jump .sylveon-bounce {
+                animation: sylveon-jump 0.4s ease-out forwards;
+            }
+            
+            @keyframes sylveon-jump {
+                0% { transform: translateY(0) scale(1); }
+                50% { transform: translateY(-5px) scale(1.1); }
+                100% { transform: translateY(-30px) scale(0.9); opacity: 0.5; }
             }
             
             .loading-text {
@@ -160,16 +169,26 @@
             if (progress >= 100) {
                 clearInterval(interval);
                 setTimeout(() => {
-                    // 开始蓄力动画
+                    if (loadingText) {
+                        loadingText.textContent = '仙子伊布蓄力中...';
+                    }
+                    // 开始蓄力动画（弹跳2次）
                     if (sylveon) {
                         sylveon.classList.add('charging');
                     }
-                    if (loadingText) {
-                        loadingText.textContent = '仙子伊布出发啦！';
-                    }
                     
-                    // 蓄力后向上跳出
-                    setTimeout(jumpOutBanner, 700);
+                    // 蓄力完成后准备起飞
+                    setTimeout(() => {
+                        if (loadingText) {
+                            loadingText.textContent = '仙子伊布出发啦！';
+                        }
+                        const banner = document.getElementById('loadingBanner');
+                        if (banner) {
+                            banner.classList.add('ready-to-jump');
+                        }
+                        // 起跳动画后整个横幅飞出
+                        setTimeout(jumpOutBanner, 400);
+                    }, 1200);
                 }, 300);
             }
         }, 180);

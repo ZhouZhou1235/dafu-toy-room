@@ -7,11 +7,18 @@
 (function() {
     'use strict';
     
+    // SVG图标
+    const ICONS = {
+        palette: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm0 2a8 8 0 0 0-8 8c0 4.418 3.582 8 8 8s8-3.582 8-8a8 8 0 0 0-8-8z"/><path d="M12 6v12M6 12h12"/><circle cx="12" cy="12" r="3"/></svg>`,
+        heart: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`,
+        moon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 2c-1.05 0-2.05.16-3 .46 1.69 1.2 2.86 3.06 2.86 5.21 0 3.64-2.95 6.59-6.59 6.59-.71 0-1.39-.12-2.03-.33C1.12 17.15 4.68 20 9 20c5.52 0 10-4.48 10-10S14.52 2 9 2z"/></svg>`
+    };
+
     // 主题配置
     const THEMES = {
         pink: {
             name: '粉色系',
-            icon: '�',
+            icon: ICONS.palette,
             colors: {
                 '--primary-color': '#ff6b9d',
                 '--primary-light': '#ffc2d1',
@@ -25,7 +32,7 @@
         },
         blue: {
             name: '蓝色系',
-            icon: '💙',
+            icon: ICONS.heart,
             colors: {
                 '--primary-color': '#5c9dff',
                 '--primary-light': '#b8d4ff',
@@ -39,7 +46,7 @@
         },
         dark: {
             name: '暗色系',
-            icon: '🌙',
+            icon: ICONS.moon,
             colors: {
                 '--primary-color': '#ff6b9d',
                 '--primary-light': '#ff8fab',
@@ -114,12 +121,17 @@
                 border: none;
                 background: var(--card-bg);
                 box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-                font-size: 1.5rem;
                 cursor: pointer;
                 transition: all 0.3s ease;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                color: var(--primary-color);
+            }
+            
+            .theme-btn svg {
+                width: 24px;
+                height: 24px;
             }
             
             .theme-btn:hover {
@@ -171,8 +183,17 @@
             }
             
             .theme-icon {
-                font-size: 1.2rem;
+                width: 20px;
+                height: 20px;
                 margin-right: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .theme-icon svg {
+                width: 100%;
+                height: 100%;
             }
             
             .theme-name {
