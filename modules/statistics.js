@@ -46,24 +46,37 @@
     
     // 初始化
     async function init() {
+        console.log('📊 统计模块初始化开始...');
         getElements();
         
-        // 记录本次访问
-        await recordVisit();
-        
-        // 加载统计数据
-        await loadStats();
-        
-        if (elements.panel) {
-            bindEvents();
-            updateDisplay();
+        try {
+            // 记录本次访问
+            console.log('📊 正在记录访问...');
+            await recordVisit();
+            console.log('📊 访问记录完成');
+            
+            // 加载统计数据
+            console.log('📊 正在加载统计数据...');
+            await loadStats();
+            console.log('📊 统计数据加载完成:', stats);
+            
+            if (elements.panel) {
+                bindEvents();
+                updateDisplay();
+            }
+        } catch (error) {
+            console.error('📊 统计模块初始化失败:', error);
         }
         
         // 定期刷新数据（每30秒）
         setInterval(async () => {
-            await loadStats();
-            if (elements.panel && document.getElementById('statisticsPanel').classList.contains('active')) {
-                updateDisplay();
+            try {
+                await loadStats();
+                if (elements.panel && document.getElementById('statisticsPanel').classList.contains('active')) {
+                    updateDisplay();
+                }
+            } catch (e) {
+                console.error('📊 定期刷新失败:', e);
             }
         }, 30000);
         
@@ -92,26 +105,32 @@
     // 从服务器加载统计数据
     async function loadStats() {
         try {
+            console.log('📊 请求URL:', CONFIG.apiEndpoint);
             const response = await fetch(CONFIG.apiEndpoint);
+            console.log('📊 响应状态:', response.status);
             if (response.ok) {
                 const data = await response.json();
                 stats = data;
                 console.log('📊 统计数据已更新:', stats);
+            } else {
+                console.error('📊 加载统计数据失败，状态码:', response.status);
             }
         } catch (error) {
-            console.error('加载统计数据失败:', error);
+            console.error('📊 加载统计数据失败:', error);
         }
     }
     
     // 记录访问
     async function recordVisit() {
         try {
-            await fetch(CONFIG.apiEndpoint, {
+            console.log('📊 发送POST请求到:', CONFIG.apiEndpoint);
+            const response = await fetch(CONFIG.apiEndpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             });
+            console.log('📊 记录访问响应:', response.status);
         } catch (error) {
-            console.error('记录访问失败:', error);
+            console.error('📊 记录访问失败:', error);
         }
     }
     
