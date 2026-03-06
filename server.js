@@ -31,7 +31,8 @@ const CONFIG = {
         '::1',                    // 本地IPv6
         '127.0.0.1'               // 本地IPv4
     ],
-    adminPassword: 'O&0T89oAaDi7' // 备用密码
+    // 从环境变量读取密码，如果没有则使用随机密码（需要手动设置）
+    adminPassword: process.env.ADMIN_PASSWORD || 'PleaseSetStrongPasswordInEnv'
 };
 
 // ========================================
@@ -1297,8 +1298,8 @@ const server = http.createServer((req, res) => {
         return;
     }
     
-    // 查看我的IP（调试用）
-    if (pathname === '/myip') {
+    // 查看我的IP（调试用）- 生产环境禁用
+    if (pathname === '/myip' && process.env.NODE_ENV !== 'production') {
         const forwarded = req.headers['x-forwarded-for'];
         const remoteAddr = req.connection.remoteAddress;
         const socketAddr = req.socket.remoteAddress;
