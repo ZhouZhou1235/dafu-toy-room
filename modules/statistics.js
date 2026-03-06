@@ -166,7 +166,16 @@
     
     // 更新显示
     function updateDisplay() {
-        if (!elements.todayVisitors) return;
+        // 重新获取DOM元素（确保元素存在）
+        getElements();
+        
+        console.log('📊 更新显示，DOM元素:', elements);
+        console.log('📊 当前统计数据:', stats);
+        
+        if (!elements.todayVisitors) {
+            console.warn('📊 今日访客元素未找到');
+            return;
+        }
         
         // 今日数据
         elements.todayVisitors.textContent = stats.today.uniqueVisitors;
@@ -191,6 +200,8 @@
             const date = new Date(stats.total.lastUpdated);
             elements.lastUpdated.textContent = formatDateTime(date);
         }
+        
+        console.log('📊 显示更新完成');
     }
     
     // 格式化日期时间
