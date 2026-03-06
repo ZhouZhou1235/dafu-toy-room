@@ -101,6 +101,26 @@
     
     // 进入游戏
     function enterGame(gameName) {
+        // 如果是今天吃什么，先播放仙子伊布动画
+        if (gameName === 'whatToEat') {
+            const card = document.querySelector('.gate-card[data-game="whatToEat"]');
+            if (card) {
+                card.classList.add('jumping');
+                // 等待动画完成后再进入（0.5秒）
+                setTimeout(() => {
+                    card.classList.remove('jumping');
+                    doEnterGame(gameName);
+                }, 500);
+                return;
+            }
+        }
+        
+        // 其他游戏直接进入
+        doEnterGame(gameName);
+    }
+    
+    // 实际进入游戏的逻辑
+    function doEnterGame(gameName) {
         // 隐藏大门
         elements.gatePage.classList.add('hidden');
         

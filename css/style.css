@@ -1950,18 +1950,23 @@ textarea {
     transition: transform 0.3s ease;
 }
 
-/* 点击时的跳动效果 - 快速上下跳动 */
-.gate-card[data-game="whatToEat"]:active::after {
-    animation: sylveon-bounce 0.5s ease-in-out;
+/* 点击时的快速上下抖动效果 */
+.gate-card[data-game="whatToEat"].jumping::after {
+    animation: sylveon-shake 0.5s ease-in-out;
 }
 
-@keyframes sylveon-bounce {
+@keyframes sylveon-shake {
     0% { transform: translateY(0) rotate(-5deg) scale(1); }
-    20% { transform: translateY(-40px) rotate(0deg) scale(1.15); }
+    10% { transform: translateY(-20px) rotate(-3deg) scale(1.05); }
+    20% { transform: translateY(0) rotate(-5deg) scale(1); }
+    30% { transform: translateY(-15px) rotate(-3deg) scale(1.05); }
     40% { transform: translateY(0) rotate(-5deg) scale(1); }
-    60% { transform: translateY(-25px) rotate(0deg) scale(1.1); }
+    50% { transform: translateY(-10px) rotate(-3deg) scale(1.05); }
+    60% { transform: translateY(0) rotate(-5deg) scale(1); }
+    70% { transform: translateY(-5px) rotate(-3deg) scale(1.05); }
     80% { transform: translateY(0) rotate(-5deg) scale(1); }
-    100% { transform: translateY(-10px) rotate(-3deg) scale(1.05); }
+    90% { transform: translateY(-2px) rotate(-4deg) scale(1.02); }
+    100% { transform: translateY(0) rotate(-5deg) scale(1); }
 }
 
 .gate-card::before {
