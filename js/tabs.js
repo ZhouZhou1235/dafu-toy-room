@@ -49,8 +49,13 @@
         const activeButton = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
         const activePanel = document.getElementById(`${tabId}Panel`);
         
-        if (activeButton && activePanel) {
-            activeButton.classList.add('active');
+        if (activePanel) {
+            // 如果有对应的按钮，激活它
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
+            
+            // 激活面板
             activePanel.classList.add('active');
             
             // 触发自定义事件，通知模块面板已切换

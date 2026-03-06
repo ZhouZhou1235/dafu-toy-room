@@ -8,11 +8,12 @@
     
     // 游戏配置
     const CONFIG = {
-        gridSize: 3,        // 3x3 网格
-        gameDuration: 30,   // 游戏时长 30 秒
-        minPeepTime: 400,   // 地鼠最短出现时间
-        maxPeepTime: 1000,  // 地鼠最长出现时间
-        pointsPerHit: 10    // 每次击中得分
+        gridSize: 3,           // 3x3 网格
+        gameDuration: 30,      // 游戏时长 30 秒
+        minPeepTime: 400,      // 地鼠最短出现时间
+        maxPeepTime: 1000,     // 地鼠最长出现时间
+        pointsPerHit: 10,      // 每次击中得分
+        pointsPerMiss: -10     // 每次点空扣分
     };
     
     // 游戏状态
@@ -99,24 +100,68 @@
         }, time);
     }
     
+    // 显示得分动画
+    function showScorePopup(x, y, score) {
+        const popup = document.createElement('div');
+        popup.className = 'score-popup';
+        popup.textContent = score > 0 ? `+${score}` : `${score}`;
+        popup.style.cssText = `
+            position: fixed;
+            left: ${x}px;
+            top: ${y}px;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            font-weight: bold;
+            color: ${score > 0 ? '#4CAF50' : '#f44336'};
+            pointer-events: none;
+            z-index: 9999;
+            animation: score-popup-anim 0.8s ease-out forwards;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        `;
+        document.body.appendChild(popup);
+        
+        setTimeout(() => popup.remove(), 800);
+    }
+    
     // 打地鼠
-    function whack(index) {
+    function whack(index, event) {
         if (!state.isPlaying) return;
         
         const hole = elements.holes[index];
-        if (!hole.isUp) return;
+        const rect = hole.hole.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
         
-        state.score += CONFIG.pointsPerHit;
-        updateScore();
-        
-        hole.hole.classList.remove('up');
-        hole.isUp = false;
-        
-        // 击中动画
-        hole.mole.textContent = '💫';
-        setTimeout(() => {
-            hole.mole.textContent = '🐹';
-        }, 200);
+        if (hole.isUp) {
+            // 打中了！
+            state.score += CONFIG.pointsPerHit;
+            updateScore();
+            
+            // 显示 +10
+            showScorePopup(x, y, CONFIG.pointsPerHit);
+            
+            hole.hole.classList.remove('up');
+            hole.isUp = false;
+            
+            // 击中动画
+            hole.mole.textContent = '💫';
+            setTimeout(() => {
+                hole.mole.textContent = '🐹';
+            }, 200);
+        } else {
+            // 点空了！扣分
+            state.score += CONFIG.pointsPerMiss;
+            updateScore();
+            
+            // 显示 -10
+            showScorePopup(x, y, CONFIG.pointsPerMiss);
+            
+            // 空点动画
+            hole.hole.style.animation = 'shake 0.3s ease-in-out';
+            setTimeout(() => {
+                hole.hole.style.animation = '';
+            }, 300);
+        }
     }
     
     // 更新分数显示

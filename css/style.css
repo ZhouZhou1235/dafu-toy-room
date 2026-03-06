@@ -2162,6 +2162,21 @@ textarea {
     50% { transform: translateY(-10px); }
 }
 
+/* 得分弹出动画 */
+@keyframes score-popup-anim {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    20% {
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -150%) scale(1);
+    }
+}
+
 /* ========================================
    数据统计横幅样式 📊
    ======================================== */
