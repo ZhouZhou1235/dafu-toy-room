@@ -20,6 +20,200 @@ const CONFIG = {
     apiPath: '/v1/chat/completions'
 };
 
+// ========================================
+// 访客统计系统
+// ========================================
+const STATS_FILE = path.join(__dirname, 'stats.json');
+
+// 内存中的统计数据
+let serverStats = {
+    today: {
+        date: new Date().toDateString(),
+        uniqueVisitors: 0,
+        totalVisits: 0,
+        visitorIPs: new Set(),
+        moduleUsage: {
+            guessNumber: 0,
+            whatToEat: 0,
+            fortune: 0,
+            blessing: 0,
+            aiChat: 0
+        }
+    },
+    total: {
+        uniqueVisitors: 0,
+        totalVisits: 0,
+        moduleUsage: {
+            guessNumber: 0,
+            whatToEat: 0,
+            fortune: 0,
+            blessing: 0,
+            aiChat: 0
+        },
+        lastUpdated: new Date().toISOString()
+    }
+};
+
+// 加载统计数据
+function loadStats() {
+    try {
+        if (fs.existsSync(STATS_FILE)) {
+            const data = JSON.parse(fs.readFileSync(STATS_FILE, 'utf8'));
+            const today = new Date().toDateString();
+            
+            // 检查是否是新的一天
+            if (data.today && data.today.date === today) {
+                serverStats.today = {
+                    ...data.today,
+                    visitorIPs: new Set(data.today.visitorIPs || [])
+                };
+            } else {
+                // 新的一天，重置今日统计
+                serverStats.today = {
+                    date: today,
+                    uniqueVisitors: 0,
+                    totalVisits: 0,
+                    visitorIPs: new Set(),
+                    moduleUsage: {
+                        guessNumber: 0,
+                        whatToEat: 0,
+                        fortune: 0,
+                        blessing: 0,
+                        aiChat: 0
+                    }
+                };
+            }
+            
+            serverStats.total = data.total || serverStats.total;
+            log('统计数据已加载');
+        }
+    } catch (error) {
+        log('加载统计数据失败: ' + error.message, 'error');
+    }
+}
+
+// 保存统计数据
+function saveStats() {
+    try {
+        const dataToSave = {
+            today: {
+                ...serverStats.today,
+                visitorIPs: Array.from(serverStats.today.visitorIPs)
+            },
+            total: serverStats.total
+        };
+        fs.writeFileSync(STATS_FILE, JSON.stringify(dataToSave, null, 2));
+    } catch (error) {
+        log('保存统计数据失败: ' + error.message, 'error');
+    }
+}
+
+// 记录访问
+function recordVisit(clientIP) {
+    const today = new Date().toDateString();
+    
+    // 检查是否是新的一天
+    if (serverStats.today.date !== today) {
+        serverStats.today = {
+            date: today,
+            uniqueVisitors: 0,
+            totalVisits: 0,
+            visitorIPs: new Set(),
+            moduleUsage: {
+                guessNumber: 0,
+                whatToEat: 0,
+                fortune: 0,
+                blessing: 0,
+                aiChat: 0
+            }
+        };
+    }
+    
+    // 记录访问
+    serverStats.today.totalVisits++;
+    serverStats.total.totalVisits++;
+    
+    // 检查是否为新访客（按IP）
+    if (!serverStats.today.visitorIPs.has(clientIP)) {
+        serverStats.today.visitorIPs.add(clientIP);
+        serverStats.today.uniqueVisitors++;
+        serverStats.total.uniqueVisitors++;
+    }
+    
+    serverStats.total.lastUpdated = new Date().toISOString();
+    saveStats();
+}
+
+// 记录模块使用
+function recordModuleUsage(moduleName) {
+    if (serverStats.today.moduleUsage.hasOwnProperty(moduleName)) {
+        serverStats.today.moduleUsage[moduleName]++;
+        serverStats.total.moduleUsage[moduleName]++;
+        serverStats.total.lastUpdated = new Date().toISOString();
+        saveStats();
+    }
+}
+
+// 获取统计数据的API
+function handleStatsAPI(req, res) {
+    const clientIP = req.headers['x-forwarded-for'] || 
+                     req.connection.remoteAddress || 
+                     req.socket.remoteAddress;
+    
+    if (req.method === 'GET') {
+        // 返回统计数据
+        res.writeHead(200, { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        });
+        res.end(JSON.stringify({
+            today: {
+                date: serverStats.today.date,
+                uniqueVisitors: serverStats.today.uniqueVisitors,
+                totalVisits: serverStats.today.totalVisits,
+                moduleUsage: serverStats.today.moduleUsage
+            },
+            total: serverStats.total
+        }));
+    } else if (req.method === 'POST') {
+        // 记录访问
+        recordVisit(clientIP);
+        
+        res.writeHead(200, { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        });
+        res.end(JSON.stringify({ success: true }));
+    }
+}
+
+// 记录模块使用的API
+function handleModuleStatsAPI(req, res) {
+    if (req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', () => {
+            try {
+                const data = JSON.parse(body);
+                if (data.module) {
+                    recordModuleUsage(data.module);
+                }
+                res.writeHead(200, { 
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                });
+                res.end(JSON.stringify({ success: true }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Invalid data' }));
+            }
+        });
+    }
+}
+
+// 初始化时加载统计数据
+loadStats();
+
 // MIME类型映射
 const MIME_TYPES = {
     '.html': 'text/html',
@@ -204,6 +398,18 @@ const server = http.createServer((req, res) => {
     // API路由
     if (pathname === '/api/chat' && req.method === 'POST') {
         proxyDeepSeekAPI(req, res);
+        return;
+    }
+    
+    // 统计数据API
+    if (pathname === '/api/stats') {
+        handleStatsAPI(req, res);
+        return;
+    }
+    
+    // 模块使用统计API
+    if (pathname === '/api/stats/module') {
+        handleModuleStatsAPI(req, res);
         return;
     }
     

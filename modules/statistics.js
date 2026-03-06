@@ -1,192 +1,79 @@
 /**
  * 数据统计模块 📊
  * 积木式架构 - 可独立删除或替换
- * 记录访客人数和功能使用次数
+ * 记录访客人数和功能使用次数（使用服务器端统计）
  */
 
 (function() {
     'use strict';
     
-    // 存储键名
-    const STORAGE_KEYS = {
-        today: 'dafu_stats_today',
-        total: 'dafu_stats_total',
-        visitorId: 'dafu_visitor_id',
-        lastVisit: 'dafu_last_visit'
-    };
-    
-    // 统计配置
+    // 配置
     const CONFIG = {
-        maxTotal: 999,
-        modules: ['guessNumber', 'whatToEat', 'fortune', 'blessing', 'aiChat']
+        apiEndpoint: '/api/stats',
+        moduleApiEndpoint: '/api/stats/module',
+        maxTotal: 999
     };
     
-    // 今日统计数据结构
-    const defaultTodayStats = {
-        date: new Date().toDateString(),
-        uniqueVisitors: 0,
-        totalVisits: 0,
-        moduleUsage: {
-            guessNumber: 0,
-            whatToEat: 0,
-            fortune: 0,
-            blessing: 0,
-            aiChat: 0
+    // 统计数据
+    let stats = {
+        today: {
+            uniqueVisitors: 0,
+            totalVisits: 0,
+            moduleUsage: {
+                guessNumber: 0,
+                whatToEat: 0,
+                fortune: 0,
+                blessing: 0,
+                aiChat: 0
+            }
+        },
+        total: {
+            uniqueVisitors: 0,
+            totalVisits: 0,
+            moduleUsage: {
+                guessNumber: 0,
+                whatToEat: 0,
+                fortune: 0,
+                blessing: 0,
+                aiChat: 0
+            },
+            lastUpdated: null
         }
     };
-    
-    // 总统计数据结构
-    const defaultTotalStats = {
-        uniqueVisitors: 0,
-        totalVisits: 0,
-        moduleUsage: {
-            guessNumber: 0,
-            whatToEat: 0,
-            fortune: 0,
-            blessing: 0,
-            aiChat: 0
-        },
-        lastUpdated: null
-    };
-    
-    // 当前统计数据
-    let todayStats = null;
-    let totalStats = null;
-    let currentVisitorId = null;
-    let isNewVisitor = false;
     
     // DOM元素
     let elements = {};
     
     // 初始化
-    function init() {
-        loadStats();
-        recordVisit();
+    async function init() {
         getElements();
+        
+        // 记录本次访问
+        await recordVisit();
+        
+        // 加载统计数据
+        await loadStats();
         
         if (elements.panel) {
             bindEvents();
             updateDisplay();
         }
         
-        // 监听标签页切换，更新显示
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && elements.panel) {
+        // 定期刷新数据（每30秒）
+        setInterval(async () => {
+            await loadStats();
+            if (elements.panel && document.getElementById('statisticsPanel').classList.contains('active')) {
                 updateDisplay();
             }
-        });
+        }, 30000);
         
         console.log('📊 数据统计模块已加载！');
-        console.log(`今日访客: ${todayStats.uniqueVisitors}, 总访客: ${totalStats.uniqueVisitors}`);
-    }
-    
-    // 加载统计数据
-    function loadStats() {
-        const savedToday = localStorage.getItem(STORAGE_KEYS.today);
-        const savedTotal = localStorage.getItem(STORAGE_KEYS.total);
-        const today = new Date().toDateString();
-        
-        // 加载今日统计
-        if (savedToday) {
-            todayStats = JSON.parse(savedToday);
-            // 检查是否是新的一天
-            if (todayStats.date !== today) {
-                todayStats = { ...defaultTodayStats, date: today };
-            }
-        } else {
-            todayStats = { ...defaultTodayStats };
-        }
-        
-        // 加载总统计
-        if (savedTotal) {
-            totalStats = JSON.parse(savedTotal);
-        } else {
-            totalStats = { ...defaultTotalStats };
-        }
-        
-        // 加载访客ID
-        currentVisitorId = localStorage.getItem(STORAGE_KEYS.visitorId);
-        if (!currentVisitorId) {
-            currentVisitorId = generateVisitorId();
-            localStorage.setItem(STORAGE_KEYS.visitorId, currentVisitorId);
-            isNewVisitor = true;
-        }
-    }
-    
-    // 生成唯一访客ID
-    function generateVisitorId() {
-        return 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    }
-    
-    // 记录访问
-    function recordVisit() {
-        const lastVisit = sessionStorage.getItem(STORAGE_KEYS.lastVisit);
-        const now = Date.now();
-        
-        // 检查是否是新会话（30分钟无操作算新会话）
-        const isNewSession = !lastVisit || (now - parseInt(lastVisit)) > 30 * 60 * 1000;
-        
-        if (isNewSession) {
-            // 今日统计
-            todayStats.totalVisits++;
-            if (isNewVisitor) {
-                todayStats.uniqueVisitors++;
-            }
-            
-            // 总统计（上限999）
-            if (totalStats.uniqueVisitors < CONFIG.maxTotal) {
-                totalStats.totalVisits++;
-                if (isNewVisitor) {
-                    totalStats.uniqueVisitors++;
-                }
-            }
-            
-            // 更新时间
-            totalStats.lastUpdated = new Date().toISOString();
-            
-            // 保存
-            saveStats();
-            
-            // 标记会话
-            sessionStorage.setItem(STORAGE_KEYS.lastVisit, now.toString());
-            isNewVisitor = false;
-        }
-    }
-    
-    // 记录模块使用
-    function recordModuleUsage(moduleName) {
-        if (!CONFIG.modules.includes(moduleName)) return;
-        
-        // 今日统计
-        todayStats.moduleUsage[moduleName]++;
-        
-        // 总统计
-        totalStats.moduleUsage[moduleName]++;
-        
-        // 更新时间
-        totalStats.lastUpdated = new Date().toISOString();
-        
-        // 保存
-        saveStats();
-        
-        // 如果统计面板打开，实时更新
-        if (elements.panel && elements.panel.classList.contains('active')) {
-            updateDisplay();
-        }
-        
-        console.log(`📊 记录模块使用: ${moduleName}`);
-    }
-    
-    // 保存统计数据
-    function saveStats() {
-        localStorage.setItem(STORAGE_KEYS.today, JSON.stringify(todayStats));
-        localStorage.setItem(STORAGE_KEYS.total, JSON.stringify(totalStats));
     }
     
     // 获取DOM元素
     function getElements() {
         elements = {
-            panel: document.getElementById('statsPanel'),
+            panel: document.getElementById('statisticsPanel'),
             todayVisitors: document.getElementById('todayVisitors'),
             todayVisits: document.getElementById('todayVisits'),
             totalVisitors: document.getElementById('totalVisitors'),
@@ -202,12 +89,58 @@
         };
     }
     
+    // 从服务器加载统计数据
+    async function loadStats() {
+        try {
+            const response = await fetch(CONFIG.apiEndpoint);
+            if (response.ok) {
+                const data = await response.json();
+                stats = data;
+                console.log('📊 统计数据已更新:', stats);
+            }
+        } catch (error) {
+            console.error('加载统计数据失败:', error);
+        }
+    }
+    
+    // 记录访问
+    async function recordVisit() {
+        try {
+            await fetch(CONFIG.apiEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            console.error('记录访问失败:', error);
+        }
+    }
+    
+    // 记录模块使用
+    async function recordModuleUsage(moduleName) {
+        try {
+            await fetch(CONFIG.moduleApiEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ module: moduleName })
+            });
+            
+            // 重新加载统计数据
+            await loadStats();
+            
+            // 如果统计面板打开，更新显示
+            if (elements.panel && document.getElementById('statisticsPanel').classList.contains('active')) {
+                updateDisplay();
+            }
+        } catch (error) {
+            console.error('记录模块使用失败:', error);
+        }
+    }
+    
     // 绑定事件
     function bindEvents() {
-        // 监听标签页切换事件，更新显示
         document.addEventListener('tabChanged', (e) => {
             if (e.detail.tabId === 'statistics') {
-                updateDisplay();
+                loadStats().then(() => updateDisplay());
             }
         });
     }
@@ -217,26 +150,26 @@
         if (!elements.todayVisitors) return;
         
         // 今日数据
-        elements.todayVisitors.textContent = todayStats.uniqueVisitors;
-        elements.todayVisits.textContent = todayStats.totalVisits;
+        elements.todayVisitors.textContent = stats.today.uniqueVisitors;
+        elements.todayVisits.textContent = stats.today.totalVisits;
         
         // 总数据
-        elements.totalVisitors.textContent = Math.min(totalStats.uniqueVisitors, CONFIG.maxTotal);
-        elements.totalVisits.textContent = Math.min(totalStats.totalVisits, CONFIG.maxTotal);
+        elements.totalVisitors.textContent = Math.min(stats.total.uniqueVisitors, CONFIG.maxTotal);
+        elements.totalVisits.textContent = Math.min(stats.total.totalVisits, CONFIG.maxTotal);
         
         // 模块使用统计
         Object.keys(elements.moduleStats).forEach(moduleName => {
             const el = elements.moduleStats[moduleName];
             if (el) {
-                const today = todayStats.moduleUsage[moduleName] || 0;
-                const total = totalStats.moduleUsage[moduleName] || 0;
+                const today = stats.today.moduleUsage[moduleName] || 0;
+                const total = stats.total.moduleUsage[moduleName] || 0;
                 el.innerHTML = `<span class="stat-today">${today}</span> / <span class="stat-total">${total}</span>`;
             }
         });
         
         // 最后更新时间
-        if (elements.lastUpdated && totalStats.lastUpdated) {
-            const date = new Date(totalStats.lastUpdated);
+        if (elements.lastUpdated && stats.total.lastUpdated) {
+            const date = new Date(stats.total.lastUpdated);
             elements.lastUpdated.textContent = formatDateTime(date);
         }
     }
@@ -250,8 +183,8 @@
     // 导出API供其他模块使用
     window.Statistics = {
         recordModuleUsage,
-        getTodayStats: () => ({ ...todayStats }),
-        getTotalStats: () => ({ ...totalStats })
+        getTodayStats: () => ({ ...stats.today }),
+        getTotalStats: () => ({ ...stats.total })
     };
     
     // 初始化
@@ -259,10 +192,5 @@
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
-    }
-    
-    // 同时注册到模块系统
-    if (window.DafuToyRoom && window.DafuToyRoom.ModuleRegistry) {
-        window.DafuToyRoom.ModuleRegistry.register('statistics', init);
     }
 })();
