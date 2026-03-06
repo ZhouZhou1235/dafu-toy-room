@@ -90,6 +90,18 @@
                 50% { transform: rotate(180deg) scale(1.3); }
                 100% { transform: rotate(360deg) scale(1); }
             }
+            
+            .easter-egg-btn.celebrating {
+                animation: celebrating-spin 1s ease-out;
+            }
+            
+            @keyframes celebrating-spin {
+                0% { transform: rotate(0deg) scale(1); }
+                25% { transform: rotate(360deg) scale(1.5); }
+                50% { transform: rotate(720deg) scale(1.2); }
+                75% { transform: rotate(1080deg) scale(1.4); }
+                100% { transform: rotate(1440deg) scale(1); }
+            }
         `;
         
         const styleSheet = document.createElement('style');
@@ -151,6 +163,13 @@
         // 显示提示
         const msg = source === 'konami' ? '🎮 Konami代码激活！' : '🎉 彩蛋触发！';
         showToast(msg + ' 烟花表演开始！');
+        
+        // 🎉 按钮转圈动画
+        const btn = document.querySelector('.easter-egg-btn');
+        if (btn) {
+            btn.classList.add('celebrating');
+            setTimeout(() => btn.classList.remove('celebrating'), 1000);
+        }
         
         // 启动烟花
         startFireworks();
