@@ -11,7 +11,7 @@
     const CONFIG = {
         apiEndpoint: '/api/admin',
         clickThreshold: 10,
-        clickTimeout: 3000
+        clickTimeout: 5000  // 5秒内点击10次
     };
     
     // 状态
@@ -348,7 +348,10 @@
     // 绑定版本号点击
     function bindVersionClick() {
         const version = document.querySelector('.version');
-        if (!version) return;
+        if (!version) {
+            console.log('⚠️ 未找到版本号元素');
+            return;
+        }
         
         version.style.cursor = 'pointer';
         version.title = '点我10次有惊喜~';
@@ -363,8 +366,11 @@
             clickCount++;
             lastClickTime = now;
             
+            console.log(`点击版本号: ${clickCount}/${CONFIG.clickThreshold}`);
+            
             if (clickCount >= CONFIG.clickThreshold) {
                 clickCount = 0;
+                console.log('🎉 彩蛋触发！打开管理面板');
                 const panel = document.getElementById('adminPanel');
                 if (panel) {
                     panel.classList.add('show');
