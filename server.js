@@ -273,23 +273,13 @@ function sanitizeInput(input) {
 
 function handleGuestbookPost(req, res) {
     const clientIP = getClientIP(req);
-    const isAdminUser = isAdmin(req);
     
-    // 检查IP是否在黑名单（管理员不受限制）
-    if (!isAdminUser && isBlacklisted(clientIP)) {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: '您已被拉黑，无法留言' }));
+    // 所有人（包括管理员）都检查每日留言限制
+    const limitCheck = canGuestbookToday(clientIP);
+    if (!limitCheck.allowed) {
+        res.writeHead(429, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: limitCheck.error }));
         return;
-    }
-    
-    // 检查每日留言限制（管理员不受限制）
-    if (!isAdminUser) {
-        const limitCheck = canGuestbookToday(clientIP);
-        if (!limitCheck.allowed) {
-            res.writeHead(429, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: false, error: limitCheck.error }));
-            return;
-        }
     }
     
     let body = '';
@@ -315,13 +305,13 @@ function handleGuestbookPost(req, res) {
                 return;
             }
             
-            // 创建留言
+            // 创建留言 - 所有人都进待审核
             const now = new Date();
             const message = {
                 id: guestbookData.nextId++,
                 content: content,
                 ip: clientIP,
-                status: isAdminUser ? 'approved' : 'pending', // 管理员直接通过
+                status: 'pending', // 所有人都进待审核
                 timestamp: now.getTime(),
                 date: now.toLocaleDateString('zh-CN'),
                 time: now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
@@ -330,17 +320,15 @@ function handleGuestbookPost(req, res) {
             guestbookData.messages.push(message);
             saveGuestbookData();
             
-            // 非管理员记录该IP今天已留言
-            if (!isAdminUser) {
-                guestbookLimitMap.set(clientIP, now.toDateString());
-            }
+            // 记录该IP今天已留言
+            guestbookLimitMap.set(clientIP, now.toDateString());
             
-            log(`新留言提交: ID=${message.id}, IP=${clientIP}, 管理员: ${isAdminUser}`);
+            log(`新留言提交: ID=${message.id}, IP=${clientIP}`);
             
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ 
                 success: true, 
-                message: isAdminUser ? '管理员留言已发布' : '提交成功，等待审核'
+                message: '提交成功，等待审核'
             }));
         } catch (e) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -350,6 +338,25 @@ function handleGuestbookPost(req, res) {
 }
 
 // ==================== 管理员API处理函数 ====================
+
+function loadGuestbookData() {
+    try {
+        if (fs.existsSync(GUESTBOOK_FILE)) {
+            const data = fs.readFileSync(GUESTBOOK_FILE, 'utf8');
+            guestbookData = JSON.parse(data);
+        }
+    } catch (e) {
+        log('加载留言板数据失败', 'error');
+    }
+}
+
+function saveGuestbookData() {
+    try {
+        fs.writeFileSync(GUESTBOOK_FILE, JSON.stringify(guestbookData, null, 2));
+    } catch (e) {
+        log('保存留言板数据失败', 'error');
+    }
+}
 
 // 检查是否是管理员
 function handleAdminCheck(req, res) {
@@ -401,13 +408,7 @@ function handleAdminApproved(req, res) {
     res.end(JSON.stringify({ success: true, messages: approvedMessages }));
 }
 
-// 获取黑名单
-function handleAdminBlacklist(req, res) {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ success: true, ips: blacklist }));
-}
-
-// 处理留言（通过/删除/拉黑）
+// 处理留言（通过/删除）
 function handleAdminMessageAction(req, res) {
     const parsedUrl = url.parse(req.url, true);
     const messageId = parseInt(parsedUrl.pathname.split('/').pop());
@@ -417,7 +418,7 @@ function handleAdminMessageAction(req, res) {
     req.on('end', () => {
         try {
             const data = JSON.parse(body);
-            const action = data.action; // 'approve', 'delete', 'ban'
+            const action = data.action; // 'approve', 'delete'
             
             const messageIndex = guestbookData.messages.findIndex(m => m.id === messageId);
             if (messageIndex === -1) {
@@ -426,33 +427,14 @@ function handleAdminMessageAction(req, res) {
                 return;
             }
             
-            const message = guestbookData.messages[messageIndex];
-            
             switch (action) {
                 case 'approve':
-                    message.status = 'approved';
+                    guestbookData.messages[messageIndex].status = 'approved';
                     log(`留言审核通过: ID=${messageId}`);
                     break;
                 case 'delete':
                     guestbookData.messages.splice(messageIndex, 1);
                     log(`留言已删除: ID=${messageId}`);
-                    break;
-                case 'ban':
-                    // 删除留言并拉黑IP（但不能拉黑管理员IP）
-                    if (CONFIG.adminIPs.includes(message.ip) || message.ip === '::ffff:127.0.0.1') {
-                        res.writeHead(403, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ success: false, error: '不能拉黑管理员IP' }));
-                        return;
-                    }
-                    guestbookData.messages.splice(messageIndex, 1);
-                    if (!isBlacklisted(message.ip)) {
-                        blacklist.push({
-                            ip: message.ip,
-                            banDate: new Date().toLocaleDateString('zh-CN'),
-                            reason: '恶意留言'
-                        });
-                        log(`IP已拉黑: ${message.ip}`);
-                    }
                     break;
                 default:
                     res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -469,21 +451,6 @@ function handleAdminMessageAction(req, res) {
         }
     });
 }
-
-// 解除拉黑
-function handleAdminUnban(req, res) {
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => {
-        try {
-            const data = JSON.parse(body);
-            const ip = data.ip;
-            
-            const index = blacklist.findIndex(item => item.ip === ip);
-            if (index === -1) {
-                res.writeHead(404, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, error: 'IP不在黑名单中' }));
-                return;
             }
             
             blacklist.splice(index, 1);
@@ -946,37 +913,6 @@ let guestbookData = {
     messages: [],
     nextId: 1
 };
-let blacklist = [];
-
-function loadGuestbookData() {
-    try {
-        if (fs.existsSync(GUESTBOOK_FILE)) {
-            const data = fs.readFileSync(GUESTBOOK_FILE, 'utf8');
-            guestbookData = JSON.parse(data);
-        }
-        if (fs.existsSync(BLACKLIST_FILE)) {
-            const data = fs.readFileSync(BLACKLIST_FILE, 'utf8');
-            blacklist = JSON.parse(data);
-        }
-    } catch (e) {
-        log('加载留言板数据失败', 'error');
-    }
-}
-
-function saveGuestbookData() {
-    try {
-        fs.writeFileSync(GUESTBOOK_FILE, JSON.stringify(guestbookData, null, 2));
-        fs.writeFileSync(BLACKLIST_FILE, JSON.stringify(blacklist, null, 2));
-    } catch (e) {
-        log('保存留言板数据失败', 'error');
-    }
-}
-
-// 检查IP是否在黑名单
-function isBlacklisted(ip) {
-    return blacklist.some(item => item.ip === ip);
-}
-
 // 检查是否是管理员
 function isAdmin(req) {
     const clientIP = getClientIP(req);
@@ -1019,11 +955,11 @@ function getLimitPage(type) {
     const countdownText = isRateLimit ? '请稍等 <span id="timer">60</span> 秒' : '请稍后再试';
     const tips = isRateLimit 
         ? `<span>💡 小贴士：</span>
-            <span>• 每分钟最多 60 次访问</span>
+            <span>• 每分钟最多 30 次访问</span>
             <span>• 稍后会自动恢复</span>
             <span>• 感谢你的耐心等待~</span>`
         : `<span>💡 小贴士：</span>
-            <span>• 服务器最大承载 50 人</span>
+            <span>• 服务器最大承载 30 人</span>
             <span>• 请稍后再访问</span>
             <span>• 感谢你的理解~</span>`;
     
@@ -1381,21 +1317,9 @@ const server = http.createServer((req, res) => {
         return;
     }
     
-    // 管理员API - 获取黑名单
-    if (pathname === '/api/admin/blacklist' && req.method === 'GET') {
-        handleAdminBlacklist(req, res);
-        return;
-    }
-    
-    // 管理员API - 处理留言（通过/删除/拉黑）
+    // 管理员API - 处理留言（通过/删除）
     if (pathname.startsWith('/api/admin/message/') && req.method === 'POST') {
         handleAdminMessageAction(req, res);
-        return;
-    }
-    
-    // 管理员API - 解除拉黑
-    if (pathname === '/api/admin/unban' && req.method === 'POST') {
-        handleAdminUnban(req, res);
         return;
     }
     
