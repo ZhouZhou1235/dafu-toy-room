@@ -160,15 +160,63 @@
     // 复制密码
     function copyPassword() {
         const passwordText = elements.result.querySelector('.password-text');
-        if (!passwordText) return;
+        if (!passwordText) {
+            alert('请先生成密码！');
+            return;
+        }
         
-        navigator.clipboard.writeText(passwordText.textContent).then(() => {
-            const originalText = elements.copyBtn.innerHTML;
-            elements.copyBtn.innerHTML = '<i class="fas fa-check"></i> 已复制！';
-            setTimeout(() => {
-                elements.copyBtn.innerHTML = originalText;
-            }, 2000);
-        });
+        const password = passwordText.textContent;
+        
+        // 尝试使用现代剪贴板 API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(password).then(() => {
+                showCopySuccess();
+            }).catch(err => {
+                console.error('复制失败:', err);
+                // 降级方案：使用传统方法
+                fallbackCopy(password);
+            });
+        } else {
+            // 降级方案
+            fallbackCopy(password);
+        }
+    }
+    
+    // 降级复制方案
+    function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        textarea.style.top = '0';
+        document.body.appendChild(textarea);
+        
+        try {
+            textarea.select();
+            textarea.setSelectionRange(0, 99999); // 移动端兼容
+            const successful = document.execCommand('copy');
+            if (successful) {
+                showCopySuccess();
+            } else {
+                alert('复制失败，请手动复制密码');
+            }
+        } catch (err) {
+            console.error('复制失败:', err);
+            alert('复制失败，请手动复制密码');
+        } finally {
+            document.body.removeChild(textarea);
+        }
+    }
+    
+    // 显示复制成功
+    function showCopySuccess() {
+        const originalText = elements.copyBtn.innerHTML;
+        elements.copyBtn.innerHTML = '<i class="fas fa-check"></i> 已复制！';
+        elements.copyBtn.style.background = '#2ECC71';
+        setTimeout(() => {
+            elements.copyBtn.innerHTML = originalText;
+            elements.copyBtn.style.background = '';
+        }, 2000);
     }
     
     // 添加到历史
