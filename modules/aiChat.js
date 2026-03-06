@@ -185,6 +185,16 @@
             state.isTyping = false;
             elements.sendBtn.disabled = false;
             elements.chatInput.focus();
+            
+            // 记录统计
+            recordStats();
+        }
+    }
+    
+    // 记录统计
+    function recordStats() {
+        if (window.Statistics && window.Statistics.recordModuleUsage) {
+            window.Statistics.recordModuleUsage('aiChat');
         }
     }
     

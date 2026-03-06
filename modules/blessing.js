@@ -101,7 +101,17 @@
             
             // 触发庆祝动画
             celebrateBlessing();
+            
+            // 记录统计
+            recordStats();
         }, 800);
+    }
+    
+    // 记录统计
+    function recordStats() {
+        if (window.Statistics && window.Statistics.recordModuleUsage) {
+            window.Statistics.recordModuleUsage('blessing');
+        }
     }
     
     // 从API获取祝福语

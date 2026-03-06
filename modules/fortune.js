@@ -212,7 +212,17 @@
                 showSpecificFortune(type);
             }
             state.isFortuning = false;
+            
+            // 记录统计
+            recordStats();
         }, 1500);
+    }
+    
+    // 记录统计
+    function recordStats() {
+        if (window.Statistics && window.Statistics.recordModuleUsage) {
+            window.Statistics.recordModuleUsage('fortune');
+        }
     }
     
     // 显示综合运势
