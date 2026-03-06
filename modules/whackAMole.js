@@ -56,10 +56,13 @@
             const mole = document.createElement('div');
             mole.className = 'mole';
             mole.textContent = '🐹';
-            mole.addEventListener('click', () => whack(i));
             
             hole.appendChild(mole);
             elements.grid.appendChild(hole);
+            
+            // 绑定点击事件到地洞
+            hole.addEventListener('click', () => whack(i));
+            
             elements.holes.push({ hole, mole, isUp: false });
         }
     }
