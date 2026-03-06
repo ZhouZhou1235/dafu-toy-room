@@ -112,6 +112,9 @@
     // 绑定手机端事件
     function bindMobileEvents(btn) {
         btn.addEventListener('click', () => {
+            // 如果正在播放彩蛋，不响应点击
+            if (isTriggered) return;
+            
             const now = Date.now();
             
             // 重置计数（超过2秒）
@@ -129,8 +132,11 @@
             // 显示进度
             if (clickCount < CONFIG.mobileClicks) {
                 showToast(`再点 ${CONFIG.mobileClicks - clickCount} 次！`);
-            } else if (clickCount === CONFIG.mobileClicks && !isTriggered) {
+            } else if (clickCount === CONFIG.mobileClicks) {
+                // 第5次点击，触发彩蛋
                 triggerEasterEgg('mobile');
+                // 重置点击计数，允许再次触发
+                clickCount = 0;
             }
         });
     }
@@ -208,7 +214,10 @@
         const interval = setInterval(() => {
             if (Date.now() > endTime) {
                 clearInterval(interval);
-                isTriggered = false;
+                // 彩蛋播放完毕，重置状态
+                setTimeout(() => {
+                    isTriggered = false;
+                }, 1000);
                 return;
             }
             createFallingEmoji(emojis[Math.floor(Math.random() * emojis.length)]);
