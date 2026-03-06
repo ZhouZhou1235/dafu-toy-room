@@ -731,18 +731,36 @@
             let adminIsLoggedIn = false;
             let adminCurrentTab = 'pending';
             
-            document.getElementById('adminTrigger').addEventListener('click', function() {
-                const now = Date.now();
-                if (now - adminLastClickTime > 5000) adminClickCount = 0;
-                adminClickCount++;
-                adminLastClickTime = now;
-                console.log('点击版本号:', adminClickCount);
-                
-                if (adminClickCount >= 10) {
-                    adminClickCount = 0;
-                    document.getElementById('adminPanel').classList.add('show');
+            // 等待DOM加载完成
+            function initAdminTrigger() {
+                const trigger = document.getElementById('adminTrigger');
+                if (!trigger) {
+                    console.log('未找到adminTrigger');
+                    return;
                 }
-            });
+                
+                trigger.addEventListener('click', function() {
+                    const now = Date.now();
+                    if (now - adminLastClickTime > 5000) adminClickCount = 0;
+                    adminClickCount++;
+                    adminLastClickTime = now;
+                    console.log('点击版本号:', adminClickCount);
+                    
+                    if (adminClickCount >= 10) {
+                        adminClickCount = 0;
+                        document.getElementById('adminPanel').classList.add('show');
+                    }
+                });
+                
+                console.log('管理面板触发器已绑定');
+            }
+            
+            // 如果DOM已加载直接执行，否则等待
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initAdminTrigger);
+            } else {
+                initAdminTrigger();
+            }
             
             function closeAdminPanel() {
                 document.getElementById('adminPanel').classList.remove('show');
