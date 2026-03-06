@@ -41,52 +41,40 @@
         }
     };
     
-    // DOM元素
+    // DOM元素缓存
     let elements = {};
+    let isInitialized = false;
     
     // 初始化
     async function init() {
         console.log('📊 统计模块初始化开始...');
-        getElements();
         
+        // 记录本次访问
         try {
-            // 记录本次访问
             console.log('📊 正在记录访问...');
             await recordVisit();
             console.log('📊 访问记录完成');
-            
-            // 加载统计数据
-            console.log('📊 正在加载统计数据...');
-            await loadStats();
-            console.log('📊 统计数据加载完成:', stats);
-            
-            if (elements.panel) {
-                bindEvents();
-                updateDisplay();
-            }
         } catch (error) {
-            console.error('📊 统计模块初始化失败:', error);
+            console.error('📊 记录访问失败:', error);
         }
         
-        // 定期刷新数据（每30秒）
-        setInterval(async () => {
-            try {
-                await loadStats();
-                if (elements.panel && document.getElementById('statisticsPanel').classList.contains('active')) {
-                    updateDisplay();
-                }
-            } catch (e) {
-                console.error('📊 定期刷新失败:', e);
-            }
-        }, 30000);
+        // 绑定标签页切换事件
+        bindEvents();
         
-        console.log('📊 数据统计模块已加载！');
+        // 如果统计面板当前是激活的，立即加载数据
+        const statsPanel = document.getElementById('statisticsPanel');
+        if (statsPanel && statsPanel.classList.contains('active')) {
+            console.log('📊 统计面板当前激活，立即加载数据');
+            await loadAndDisplay();
+        }
+        
+        isInitialized = true;
+        console.log('📊 数据统计模块初始化完成！');
     }
     
     // 获取DOM元素
     function getElements() {
         elements = {
-            panel: document.getElementById('statisticsPanel'),
             todayVisitors: document.getElementById('todayVisitors'),
             todayVisits: document.getElementById('todayVisits'),
             totalVisitors: document.getElementById('totalVisitors'),
@@ -100,6 +88,15 @@
                 aiChat: document.getElementById('statAiChat')
             }
         };
+        console.log('📊 获取DOM元素:', elements);
+    }
+    
+    // 从服务器加载统计数据并显示
+    async function loadAndDisplay() {
+        console.log('📊 开始加载并显示数据...');
+        await loadStats();
+        getElements();
+        updateDisplay();
     }
     
     // 从服务器加载统计数据
@@ -137,6 +134,7 @@
     // 记录模块使用
     async function recordModuleUsage(moduleName) {
         try {
+            console.log('📊 记录模块使用:', moduleName);
             await fetch(CONFIG.moduleApiEndpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -147,30 +145,53 @@
             await loadStats();
             
             // 如果统计面板打开，更新显示
-            if (elements.panel && document.getElementById('statisticsPanel').classList.contains('active')) {
+            const statsPanel = document.getElementById('statisticsPanel');
+            if (statsPanel && statsPanel.classList.contains('active')) {
+                getElements();
                 updateDisplay();
             }
         } catch (error) {
-            console.error('记录模块使用失败:', error);
+            console.error('📊 记录模块使用失败:', error);
         }
     }
     
     // 绑定事件
     function bindEvents() {
-        document.addEventListener('tabChanged', (e) => {
+        console.log('📊 绑定标签页切换事件...');
+        
+        // 监听标签页切换
+        document.addEventListener('tabChanged', async (e) => {
+            console.log('📊 标签页切换到:', e.detail.tabId);
             if (e.detail.tabId === 'statistics') {
-                loadStats().then(() => updateDisplay());
+                console.log('📊 切换到统计面板，加载数据...');
+                await loadAndDisplay();
             }
         });
+        
+        // 监听大门访客数更新
+        document.addEventListener('DOMContentLoaded', () => {
+            updateGateVisitorCount();
+        });
+    }
+    
+    // 更新大门访客数显示
+    async function updateGateVisitorCount() {
+        const gateVisitorCount = document.getElementById('gateVisitorCount');
+        if (!gateVisitorCount) return;
+        
+        try {
+            await loadStats();
+            gateVisitorCount.textContent = stats.today.uniqueVisitors;
+            console.log('📊 大门访客数已更新:', stats.today.uniqueVisitors);
+        } catch (error) {
+            console.error('📊 更新大门访客数失败:', error);
+        }
     }
     
     // 更新显示
     function updateDisplay() {
-        // 重新获取DOM元素（确保元素存在）
-        getElements();
-        
-        console.log('📊 更新显示，DOM元素:', elements);
-        console.log('📊 当前统计数据:', stats);
+        console.log('📊 更新显示，当前数据:', stats);
+        console.log('📊 DOM元素:', elements);
         
         if (!elements.todayVisitors) {
             console.warn('📊 今日访客元素未找到');
@@ -180,6 +201,7 @@
         // 今日数据
         elements.todayVisitors.textContent = stats.today.uniqueVisitors;
         elements.todayVisits.textContent = stats.today.totalVisits;
+        console.log('📊 今日数据已更新:', stats.today.uniqueVisitors, stats.today.totalVisits);
         
         // 总数据
         elements.totalVisitors.textContent = Math.min(stats.total.uniqueVisitors, CONFIG.maxTotal);
