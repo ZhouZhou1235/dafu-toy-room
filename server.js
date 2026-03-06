@@ -315,12 +315,12 @@ function validateRequestBody(body) {
             for (const msg of data.messages) {
                 if (msg.content && typeof msg.content === 'string') {
                     // 检查消息长度
-                    if (msg.content.length > 2000) {
+                    if (msg.content.length > 4000) {
                         return { valid: false, error: '消息内容过长' };
                     }
-                    // 检查危险字符
-                    if (/[<>\"'&]/.test(msg.content)) {
-                        return { valid: false, error: '消息包含非法字符' };
+                    // 只检查危险HTML标签，允许正常标点符号
+                    if (/<script|<iframe|<object|<embed/i.test(msg.content)) {
+                        return { valid: false, error: '消息包含非法内容' };
                     }
                 }
             }
