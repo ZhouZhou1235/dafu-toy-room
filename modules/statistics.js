@@ -41,189 +41,191 @@
         }
     };
     
-    // DOM元素缓存
-    let elements = {};
-    let isInitialized = false;
+    // 标记是否已记录访问
+    let visitRecorded = false;
     
     // 初始化
-    async function init() {
-        console.log('📊 统计模块初始化开始...');
-        
-        // 记录本次访问
-        try {
-            console.log('📊 正在记录访问...');
-            await recordVisit();
-            console.log('📊 访问记录完成');
-        } catch (error) {
-            console.error('📊 记录访问失败:', error);
-        }
+    function init() {
+        console.log('📊 统计模块初始化...');
         
         // 绑定标签页切换事件
         bindEvents();
         
-        // 如果统计面板当前是激活的，立即加载数据
-        const statsPanel = document.getElementById('statisticsPanel');
-        if (statsPanel && statsPanel.classList.contains('active')) {
-            console.log('📊 统计面板当前激活，立即加载数据');
-            await loadAndDisplay();
-        }
+        // 延迟记录访问（确保页面加载完成）
+        setTimeout(function() {
+            recordVisit();
+        }, 1000);
         
-        isInitialized = true;
-        console.log('📊 数据统计模块初始化完成！');
-    }
-    
-    // 获取DOM元素
-    function getElements() {
-        elements = {
-            todayVisitors: document.getElementById('todayVisitors'),
-            todayVisits: document.getElementById('todayVisits'),
-            totalVisitors: document.getElementById('totalVisitors'),
-            totalVisits: document.getElementById('totalVisits'),
-            lastUpdated: document.getElementById('lastUpdated'),
-            moduleStats: {
-                guessNumber: document.getElementById('statGuessNumber'),
-                whatToEat: document.getElementById('statWhatToEat'),
-                fortune: document.getElementById('statFortune'),
-                blessing: document.getElementById('statBlessing'),
-                aiChat: document.getElementById('statAiChat')
-            }
-        };
-        console.log('📊 获取DOM元素:', elements);
-    }
-    
-    // 从服务器加载统计数据并显示
-    async function loadAndDisplay() {
-        console.log('📊 开始加载并显示数据...');
-        await loadStats();
-        getElements();
-        updateDisplay();
-    }
-    
-    // 从服务器加载统计数据
-    async function loadStats() {
-        try {
-            console.log('📊 请求URL:', CONFIG.apiEndpoint);
-            const response = await fetch(CONFIG.apiEndpoint);
-            console.log('📊 响应状态:', response.status);
-            if (response.ok) {
-                const data = await response.json();
-                stats = data;
-                console.log('📊 统计数据已更新:', stats);
-            } else {
-                console.error('📊 加载统计数据失败，状态码:', response.status);
-            }
-        } catch (error) {
-            console.error('📊 加载统计数据失败:', error);
-        }
-    }
-    
-    // 记录访问
-    async function recordVisit() {
-        try {
-            console.log('📊 发送POST请求到:', CONFIG.apiEndpoint);
-            const response = await fetch(CONFIG.apiEndpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+        // 定期刷新数据（每10秒）
+        setInterval(function() {
+            loadStats(function() {
+                // 如果统计面板当前显示，更新UI
+                var statsPanel = document.getElementById('statisticsPanel');
+                if (statsPanel && statsPanel.classList.contains('active')) {
+                    updateDisplay();
+                }
             });
-            console.log('📊 记录访问响应:', response.status);
-        } catch (error) {
-            console.error('📊 记录访问失败:', error);
-        }
-    }
-    
-    // 记录模块使用
-    async function recordModuleUsage(moduleName) {
-        try {
-            console.log('📊 记录模块使用:', moduleName);
-            await fetch(CONFIG.moduleApiEndpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ module: moduleName })
-            });
-            
-            // 重新加载统计数据
-            await loadStats();
-            
-            // 如果统计面板打开，更新显示
-            const statsPanel = document.getElementById('statisticsPanel');
-            if (statsPanel && statsPanel.classList.contains('active')) {
-                getElements();
-                updateDisplay();
-            }
-        } catch (error) {
-            console.error('📊 记录模块使用失败:', error);
-        }
+        }, 10000);
+        
+        console.log('📊 统计模块初始化完成');
     }
     
     // 绑定事件
     function bindEvents() {
-        console.log('📊 绑定标签页切换事件...');
+        console.log('📊 绑定事件...');
         
         // 监听标签页切换
-        document.addEventListener('tabChanged', async (e) => {
-            console.log('📊 标签页切换到:', e.detail.tabId);
+        document.addEventListener('tabChanged', function(e) {
+            console.log('📊 标签页切换:', e.detail.tabId);
             if (e.detail.tabId === 'statistics') {
-                console.log('📊 切换到统计面板，加载数据...');
-                await loadAndDisplay();
+                console.log('📊 切换到统计面板');
+                loadStats(function() {
+                    updateDisplay();
+                });
             }
-        });
-        
-        // 监听大门访客数更新
-        document.addEventListener('DOMContentLoaded', () => {
-            updateGateVisitorCount();
         });
     }
     
-    // 更新大门访客数显示
-    async function updateGateVisitorCount() {
-        const gateVisitorCount = document.getElementById('gateVisitorCount');
-        if (!gateVisitorCount) return;
+    // 加载统计数据（使用回调而不是Promise）
+    function loadStats(callback) {
+        console.log('📊 加载统计数据...');
         
-        try {
-            await loadStats();
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', CONFIG.apiEndpoint, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                console.log('📊 响应状态:', xhr.status);
+                if (xhr.status === 200) {
+                    try {
+                        var data = JSON.parse(xhr.responseText);
+                        stats = data;
+                        console.log('📊 数据已更新:', stats);
+                        if (callback) callback();
+                    } catch (e) {
+                        console.error('📊 解析数据失败:', e);
+                    }
+                } else {
+                    console.error('📊 加载失败，状态码:', xhr.status);
+                }
+            }
+        };
+        xhr.onerror = function() {
+            console.error('📊 请求失败');
+        };
+        xhr.send();
+    }
+    
+    // 记录访问（使用XMLHttpRequest）
+    function recordVisit() {
+        if (visitRecorded) {
+            console.log('📊 访问已记录，跳过');
+            return;
+        }
+        
+        console.log('📊 记录访问...');
+        
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', CONFIG.apiEndpoint, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                console.log('📊 记录访问响应:', xhr.status);
+                if (xhr.status === 200) {
+                    visitRecorded = true;
+                    console.log('📊 访问记录成功');
+                    // 记录成功后立即加载数据
+                    loadStats(function() {
+                        // 更新大门访客数
+                        updateGateVisitorCount();
+                    });
+                }
+            }
+        };
+        xhr.send(JSON.stringify({}));
+    }
+    
+    // 记录模块使用
+    function recordModuleUsage(moduleName) {
+        console.log('📊 记录模块使用:', moduleName);
+        
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', CONFIG.moduleApiEndpoint, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                console.log('📊 模块使用记录成功');
+                // 重新加载数据
+                loadStats(function() {
+                    // 如果统计面板打开，更新显示
+                    var statsPanel = document.getElementById('statisticsPanel');
+                    if (statsPanel && statsPanel.classList.contains('active')) {
+                        updateDisplay();
+                    }
+                });
+            }
+        };
+        xhr.send(JSON.stringify({ module: moduleName }));
+    }
+    
+    // 更新大门访客数
+    function updateGateVisitorCount() {
+        var gateVisitorCount = document.getElementById('gateVisitorCount');
+        if (gateVisitorCount) {
             gateVisitorCount.textContent = stats.today.uniqueVisitors;
-            console.log('📊 大门访客数已更新:', stats.today.uniqueVisitors);
-        } catch (error) {
-            console.error('📊 更新大门访客数失败:', error);
+            console.log('📊 大门访客数更新:', stats.today.uniqueVisitors);
         }
     }
     
     // 更新显示
     function updateDisplay() {
-        console.log('📊 更新显示，当前数据:', stats);
-        console.log('📊 DOM元素:', elements);
+        console.log('📊 更新显示，数据:', stats);
         
-        if (!elements.todayVisitors) {
-            console.warn('📊 今日访客元素未找到');
-            return;
-        }
+        // 获取DOM元素
+        var todayVisitors = document.getElementById('todayVisitors');
+        var todayVisits = document.getElementById('todayVisits');
+        var totalVisitors = document.getElementById('totalVisitors');
+        var totalVisits = document.getElementById('totalVisits');
+        var lastUpdated = document.getElementById('lastUpdated');
         
         // 今日数据
-        elements.todayVisitors.textContent = stats.today.uniqueVisitors;
-        elements.todayVisits.textContent = stats.today.totalVisits;
-        console.log('📊 今日数据已更新:', stats.today.uniqueVisitors, stats.today.totalVisits);
+        if (todayVisitors) {
+            todayVisitors.textContent = stats.today.uniqueVisitors;
+            console.log('📊 今日访客:', stats.today.uniqueVisitors);
+        } else {
+            console.warn('📊 今日访客元素未找到');
+        }
+        
+        if (todayVisits) {
+            todayVisits.textContent = stats.today.totalVisits;
+        }
         
         // 总数据
-        elements.totalVisitors.textContent = Math.min(stats.total.uniqueVisitors, CONFIG.maxTotal);
-        elements.totalVisits.textContent = Math.min(stats.total.totalVisits, CONFIG.maxTotal);
+        if (totalVisitors) {
+            totalVisitors.textContent = Math.min(stats.total.uniqueVisitors, CONFIG.maxTotal);
+        }
+        
+        if (totalVisits) {
+            totalVisits.textContent = Math.min(stats.total.totalVisits, CONFIG.maxTotal);
+        }
         
         // 模块使用统计
-        Object.keys(elements.moduleStats).forEach(moduleName => {
-            const el = elements.moduleStats[moduleName];
+        var modules = ['guessNumber', 'whatToEat', 'fortune', 'blessing', 'aiChat'];
+        modules.forEach(function(moduleName) {
+            var el = document.getElementById('stat' + moduleName.charAt(0).toUpperCase() + moduleName.slice(1));
             if (el) {
-                const today = stats.today.moduleUsage[moduleName] || 0;
-                const total = stats.total.moduleUsage[moduleName] || 0;
-                el.innerHTML = `<span class="stat-today">${today}</span> / <span class="stat-total">${total}</span>`;
+                var today = stats.today.moduleUsage[moduleName] || 0;
+                var total = stats.total.moduleUsage[moduleName] || 0;
+                el.innerHTML = '<span class="stat-today">' + today + '</span> / <span class="stat-total">' + total + '</span>';
             }
         });
         
         // 最后更新时间
-        if (elements.lastUpdated) {
+        if (lastUpdated) {
             if (stats.total.lastUpdated) {
-                const date = new Date(stats.total.lastUpdated);
-                elements.lastUpdated.textContent = formatDateTime(date);
+                var date = new Date(stats.total.lastUpdated);
+                lastUpdated.textContent = formatDateTime(date);
             } else {
-                elements.lastUpdated.textContent = '暂无更新记录';
+                lastUpdated.textContent = '暂无更新记录';
             }
         }
         
@@ -232,15 +234,20 @@
     
     // 格式化日期时间
     function formatDateTime(date) {
-        const pad = (n) => n.toString().padStart(2, '0');
-        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+        var pad = function(n) { return n < 10 ? '0' + n : n; };
+        return date.getFullYear() + '-' + 
+               pad(date.getMonth() + 1) + '-' + 
+               pad(date.getDate()) + ' ' + 
+               pad(date.getHours()) + ':' + 
+               pad(date.getMinutes()) + ':' + 
+               pad(date.getSeconds());
     }
     
-    // 导出API供其他模块使用
+    // 导出API
     window.Statistics = {
-        recordModuleUsage,
-        getTodayStats: () => ({ ...stats.today }),
-        getTotalStats: () => ({ ...stats.total })
+        recordModuleUsage: recordModuleUsage,
+        getTodayStats: function() { return stats.today; },
+        getTotalStats: function() { return stats.total; }
     };
     
     // 初始化
