@@ -1,7 +1,7 @@
 /**
  * Konami代码彩蛋 + Sylveon飘落游戏 🎀
  * 积木式架构 - 可独立删除或替换
- * 触发方式：电脑按 Konami代码(↑↑↓↓←→←→BA) / 手机摇晃
+ * 触发方式：电脑按 Konami代码(↑↑↓↓←→←→BA) / 连续点击大门标题"🎀"5次
  * 游戏：点击飘落的 Sylveon 消除得分
  */
 
@@ -30,36 +30,46 @@
         });
     }
     
-    // 检测手机摇晃
-    function initShakeListener() {
-        if (!window.DeviceMotionEvent) return;
+    // 检测连续点击大门标题的"🎀"
+    function initBowClickListener() {
+        let bowClickCount = 0;
+        let lastBowClickTime = 0;
+        const BOW_CLICK_TIMEOUT = 2000; // 2秒内完成5次点击
         
-        let lastX = 0, lastY = 0, lastZ = 0;
-        let shakeThreshold = 15;
-        let lastShakeTime = 0;
-        
-        window.addEventListener('devicemotion', (e) => {
-            if (isGameActive) return;
-            
-            let acceleration = e.accelerationIncludingGravity;
-            if (!acceleration) return;
-            
-            let deltaX = Math.abs(acceleration.x - lastX);
-            let deltaY = Math.abs(acceleration.y - lastY);
-            let deltaZ = Math.abs(acceleration.z - lastZ);
-            
-            if ((deltaX > shakeThreshold || deltaY > shakeThreshold || deltaZ > shakeThreshold)) {
-                let now = Date.now();
-                if (now - lastShakeTime > 1000) {
-                    lastShakeTime = now;
-                    startEasterEgg();
-                }
+        // 等待大门页面加载完成
+        const initBowListener = () => {
+            const gateTitle = document.querySelector('.gate-title');
+            if (!gateTitle) {
+                // 如果还没加载，稍后重试
+                setTimeout(initBowListener, 500);
+                return;
             }
             
-            lastX = acceleration.x;
-            lastY = acceleration.y;
-            lastZ = acceleration.z;
-        });
+            gateTitle.addEventListener('click', (e) => {
+                if (isGameActive) return;
+                
+                const now = Date.now();
+                
+                // 检查是否在超时时间内
+                if (now - lastBowClickTime > BOW_CLICK_TIMEOUT) {
+                    bowClickCount = 0;
+                }
+                
+                lastBowClickTime = now;
+                bowClickCount++;
+                
+                // 点击5次触发彩蛋
+                if (bowClickCount >= 5) {
+                    bowClickCount = 0;
+                    startEasterEgg();
+                }
+            });
+            
+            // 添加视觉提示（可选）
+            gateTitle.style.cursor = 'pointer';
+        };
+        
+        initBowListener();
     }
     
     // 启动彩蛋
@@ -422,8 +432,8 @@
     // 初始化
     function init() {
         initKonamiListener();
-        initShakeListener();
-        console.log('🎀 Konami彩蛋已加载！按 ↑↑↓↓←→←→BA 或摇晃手机触发');
+        initBowClickListener();
+        console.log('🎀 Konami彩蛋已加载！按 ↑↑↓↓←→←→BA 或连续点击大门标题5次触发');
     }
     
     // 页面加载完成后初始化
