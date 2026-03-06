@@ -541,6 +541,50 @@ textarea {
     font-size: 2.5rem;
 }
 
+/* 大福の喜好特殊样式 */
+.food-tag-dafu {
+    background: linear-gradient(135deg, #fff5f7 0%, #ffeef2 100%);
+    border-color: #ff6b9d;
+    position: relative;
+    overflow: hidden;
+}
+
+.food-tag-dafu::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent 30%,
+        rgba(255, 107, 157, 0.1) 50%,
+        transparent 70%
+    );
+    animation: dafu-shine 3s infinite;
+}
+
+@keyframes dafu-shine {
+    0% { transform: translateX(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) rotate(45deg); }
+}
+
+.food-tag-dafu:hover {
+    border-color: #ff4785;
+    background: linear-gradient(135deg, #ffeef2 0%, #ffe0e6 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(255, 107, 157, 0.2);
+}
+
+.food-tag-dafu.active {
+    background: linear-gradient(135deg, #ff6b9d 0%, #ff4785 100%);
+    border-color: #ff4785;
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(255, 107, 157, 0.4);
+}
+
 .btn-magic {
     background: linear-gradient(135deg, #ff6b9d 0%, #ff8fab 50%, #ffd93d 100%);
     background-size: 200% 200%;
