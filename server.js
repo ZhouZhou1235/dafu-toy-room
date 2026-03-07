@@ -20,7 +20,7 @@ const CONFIG = {
     apiPath: '/v1/chat/completions',
     // 安全配置
     maxRequestSize: 1024 * 1024, // 1MB 最大请求体
-    allowedOrigins: ['http://localhost:3000', 'http://127.0.0.1:3000', 'https://fufud.cc', 'https://www.fufud.cc', 'http://194.41.36.137:3000'],
+    allowedOrigins: ['http://localhost:3000', 'http://127.0.0.1:3000', 'https://fufud.cc', 'https://www.fufud.cc', 'http://194.41.36.137:3000', 'https://fufud.cc:3000', 'http://fufud.cc', 'http://fufud.cc:3000'],
     rateLimitWindow: 60000, // 1分钟
     rateLimitMax: 100, // 每分钟最大请求数
     // 限流配置
@@ -704,12 +704,43 @@ function setSecurityHeaders(res) {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
 }
 
-// 获取客户端IP
+// 获取客户端IP（支持反向代理）
 function getClientIP(req) {
-    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
-           req.connection.remoteAddress || 
-           req.socket.remoteAddress ||
-           'unknown';
+    // 按优先级尝试各种代理头
+    const forwarded = req.headers['x-forwarded-for'];
+    const realIP = req.headers['x-real-ip'];
+    const cfConnectingIP = req.headers['cf-connecting-ip']; // Cloudflare
+    
+    // 记录原始信息用于调试
+    const directIP = req.connection.remoteAddress || req.socket.remoteAddress;
+    
+    console.log(`[IP调试] forwarded: ${forwarded}, real-ip: ${realIP}, cf-ip: ${cfConnectingIP}, direct: ${directIP}`);
+    
+    // 优先使用代理头中的真实IP
+    if (cfConnectingIP) {
+        return cfConnectingIP.trim();
+    }
+    
+    if (realIP) {
+        return realIP.trim();
+    }
+    
+    if (forwarded) {
+        // x-forwarded-for 可能包含多个IP，取第一个（最原始的客户端IP）
+        const ips = forwarded.split(',').map(ip => ip.trim());
+        // 过滤掉内网IP和127.0.0.1
+        const publicIP = ips.find(ip => 
+            !ip.startsWith('10.') && 
+            !ip.startsWith('192.168.') && 
+            !ip.startsWith('172.') &&
+            ip !== '127.0.0.1' &&
+            ip !== '::1' &&
+            !ip.startsWith('::ffff:127.')
+        );
+        return publicIP || ips[0];
+    }
+    
+    return directIP || 'unknown';
 }
 
 // 创建HTTP服务器
@@ -730,6 +761,9 @@ const server = http.createServer((req, res) => {
     // 设置CORS头 - 根据请求来源动态设置
     const origin = req.headers.origin;
     if (CONFIG.allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    } else if (origin) {
+        // 对于统计API，允许任何来源访问
         res.setHeader('Access-Control-Allow-Origin', origin);
     }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
