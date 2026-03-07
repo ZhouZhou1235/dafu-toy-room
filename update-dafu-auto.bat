@@ -1,38 +1,37 @@
 @echo off
 chcp 65001 >nul
 echo ========================================
-echo 🚀 一键更新大福玩具房
+echo [DAFU TOY ROOM] Auto Update
 echo ========================================
 echo.
 
 cd /d C:\Users\51647\Documents\trae_projects\dafu-toy-room
 
-echo 📤 正在推送到 GitHub...
+echo [1/3] Pushing to GitHub...
 git add .
 git commit -m "auto-update: %date% %time%"
 git push origin master
 if errorlevel 1 (
     echo.
-    echo ❌ 推送到 GitHub 失败！
-    echo 💡 请检查网络连接，或稍后重试
+    echo [ERROR] GitHub push failed!
     pause
     exit /b 1
 )
-echo ✅ 推送成功！
+echo [OK] GitHub push success!
 echo.
 
-echo 📥 正在连接 VPS 并强制同步...
-ssh root@194.41.36.137 "cd /root/dafu-toy-room && git fetch origin && git reset --hard origin/master && pm2 restart dafu-toy-room"
+echo [2/3] Updating VPS...
+ssh root@194.41.36.137 "cd /root/dafu-toy-room && cp log-viewer.sh /tmp/ 2>/dev/null; cp check-health.sh /tmp/ 2>/dev/null; cp -r images /tmp/ 2>/dev/null; git fetch origin && git reset --hard origin/master && mv /tmp/log-viewer.sh . 2>/dev/null; mv /tmp/check-health.sh . 2>/dev/null; mv /tmp/images . 2>/dev/null; chmod +x log-viewer.sh check-health.sh 2>/dev/null; pm2 restart dafu-toy-room"
 if errorlevel 1 (
     echo.
-    echo ❌ VPS 更新失败！
+    echo [ERROR] VPS update failed!
     pause
     exit /b 1
 )
 
 echo.
 echo ========================================
-echo ✅ 全部完成！网站已更新
-echo 🌐 访问: https://fufud.cc
+echo [OK] Update complete!
+echo Website: https://fufud.cc
 echo ========================================
 pause
