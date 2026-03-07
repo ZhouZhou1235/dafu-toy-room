@@ -63,6 +63,7 @@
                 </div>
 
                 <div class="gate-card" data-game="whatToEat">
+                    <div class="sylveon-decoration"></div>
                     <div class="gate-card-icon">🍜</div>
                     <h3 class="gate-card-title">今天吃什么</h3>
                     <p class="gate-card-desc">选择困难症福音，让大福帮你决定</p>
@@ -731,5 +732,238 @@
     <script src="modules/moodDiary.js"></script>
     <script src="modules/whackAMole.js"></script>
     <script src="modules/easterEgg.js"></script>
+
+    <!-- 主题切换按钮 -->
+    <button class="theme-toggle-btn" id="themeToggleBtn" title="切换主题">
+        🎨
+    </button>
+
+    <!-- 主题选择面板 -->
+    <div class="theme-panel" id="themePanel">
+        <div class="theme-panel-title">选择主题</div>
+        <div class="theme-options">
+            <div class="theme-option active" data-theme="pink">
+                <span class="theme-option-icon">🎀</span>
+                <span class="theme-option-name">粉色系</span>
+            </div>
+            <div class="theme-option" data-theme="blue">
+                <span class="theme-option-icon">💙</span>
+                <span class="theme-option-name">蓝色系</span>
+            </div>
+            <div class="theme-option" data-theme="dark">
+                <span class="theme-option-icon">🌙</span>
+                <span class="theme-option-name">暗色系</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主题切换功能 -->
+    <script>
+        (function() {
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            const themePanel = document.getElementById('themePanel');
+            const themeOptions = document.querySelectorAll('.theme-option');
+            const html = document.documentElement;
+
+            // 从本地存储加载主题
+            const savedTheme = localStorage.getItem('dafu-theme') || 'pink';
+            html.setAttribute('data-theme', savedTheme);
+            updateActiveTheme(savedTheme);
+
+            // 切换面板显示
+            themeToggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                themePanel.classList.toggle('show');
+            });
+
+            // 点击外部关闭面板
+            document.addEventListener('click', (e) => {
+                if (!themePanel.contains(e.target) && e.target !== themeToggleBtn) {
+                    themePanel.classList.remove('show');
+                }
+            });
+
+            // 主题选择
+            themeOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    const theme = option.dataset.theme;
+                    html.setAttribute('data-theme', theme);
+                    localStorage.setItem('dafu-theme', theme);
+                    updateActiveTheme(theme);
+                    themePanel.classList.remove('show');
+                });
+            });
+
+            function updateActiveTheme(theme) {
+                themeOptions.forEach(option => {
+                    option.classList.toggle('active', option.dataset.theme === theme);
+                });
+            }
+        })();
+    </script>
+
+    <!-- 彩蛋功能 -->
+    <script>
+        (function() {
+            let clickCount = 0;
+            let lastClickTime = 0;
+            const CLICK_TIMEOUT = 2000; // 2秒内连续点击才算
+            const TARGET_CLICKS = 5;
+
+            // 查找或创建彩蛋按钮
+            function initEasterEgg() {
+                // 在大门统计横幅后添加彩蛋按钮
+                const gateFooter = document.querySelector('.gate-footer');
+                if (gateFooter) {
+                    const eggBtn = document.createElement('div');
+                    eggBtn.className = 'easter-egg-btn';
+                    eggBtn.innerHTML = '🎉<span class="egg-hint">点我试试~</span>';
+                    eggBtn.id = 'easterEggBtn';
+
+                    // 插入到访客统计后面
+                    const visitorCount = gateFooter.querySelector('.gate-visitor-count');
+                    if (visitorCount) {
+                        visitorCount.after(eggBtn);
+                    } else {
+                        gateFooter.insertBefore(eggBtn, gateFooter.firstChild);
+                    }
+
+                    eggBtn.addEventListener('click', handleEggClick);
+                }
+            }
+
+            function handleEggClick() {
+                const now = Date.now();
+                const btn = document.getElementById('easterEggBtn');
+
+                // 重置计数（如果超过超时时间）
+                if (now - lastClickTime > CLICK_TIMEOUT) {
+                    clickCount = 0;
+                }
+
+                clickCount++;
+                lastClickTime = now;
+
+                // 视觉反馈
+                btn.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    btn.style.transform = '';
+                }, 100);
+
+                // 达到目标次数
+                if (clickCount >= TARGET_CLICKS) {
+                    triggerFireworkShow(btn);
+                    clickCount = 0;
+                } else {
+                    // 显示剩余次数提示
+                    showClickHint(btn, TARGET_CLICKS - clickCount);
+                }
+            }
+
+            function showClickHint(btn, remaining) {
+                const hint = btn.querySelector('.egg-hint');
+                const originalText = hint.textContent;
+                hint.textContent = `还差 ${remaining} 次！`;
+                hint.style.opacity = '1';
+
+                setTimeout(() => {
+                    hint.textContent = originalText;
+                    hint.style.opacity = '';
+                }, 1000);
+            }
+
+            function triggerFireworkShow(btn) {
+                // 按钮动画
+                btn.classList.add('active');
+
+                // 创建烟花
+                const emojis = ['🎉', '🎊', '✨', '💫', '🌟', '💖', '🎀', '🎆', '🎇'];
+                const colors = ['#ff6b9d', '#ffd93d', '#a8e6cf', '#bb86fc', '#03dac6', '#ffab40'];
+
+                // 中心大爆炸
+                for (let i = 0; i < 30; i++) {
+                    setTimeout(() => {
+                        createFirework(emojis, colors, true);
+                    }, i * 50);
+                }
+
+                // 持续烟花
+                let count = 0;
+                const interval = setInterval(() => {
+                    createFirework(emojis, colors, false);
+                    count++;
+                    if (count >= 50) {
+                        clearInterval(interval);
+                    }
+                }, 100);
+
+                // 重置按钮
+                setTimeout(() => {
+                    btn.classList.remove('active');
+                }, 600);
+            }
+
+            function createFirework(emojis, colors, isCenter) {
+                const firework = document.createElement('div');
+                firework.className = 'firework';
+                firework.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+
+                // 随机位置
+                const x = isCenter ? 50 + (Math.random() - 0.5) * 20 : Math.random() * 100;
+                const y = isCenter ? 50 + (Math.random() - 0.5) * 20 : 20 + Math.random() * 60;
+
+                firework.style.left = x + 'vw';
+                firework.style.top = y + 'vh';
+                firework.style.color = colors[Math.floor(Math.random() * colors.length)];
+
+                document.body.appendChild(firework);
+
+                // 创建粒子
+                if (Math.random() > 0.5) {
+                    createParticles(x, y, emojis, colors);
+                }
+
+                // 清理
+                setTimeout(() => {
+                    firework.remove();
+                }, 2000);
+            }
+
+            function createParticles(x, y, emojis, colors) {
+                const particleCount = 6 + Math.floor(Math.random() * 4);
+
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'firework-particle';
+                    particle.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+
+                    // 计算飞散方向
+                    const angle = (360 / particleCount) * i;
+                    const distance = 100 + Math.random() * 100;
+                    const rad = (angle * Math.PI) / 180;
+                    const tx = Math.cos(rad) * distance;
+                    const ty = Math.sin(rad) * distance;
+
+                    particle.style.left = x + 'vw';
+                    particle.style.top = y + 'vh';
+                    particle.style.color = colors[Math.floor(Math.random() * colors.length)];
+                    particle.style.setProperty('--fly-direction', `translate(${tx}px, ${ty}px)`);
+
+                    document.body.appendChild(particle);
+
+                    setTimeout(() => {
+                        particle.remove();
+                    }, 1500);
+                }
+            }
+
+            // 页面加载完成后初始化
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initEasterEgg);
+            } else {
+                initEasterEgg();
+            }
+        })();
+    </script>
 </body>
 </html>
