@@ -130,10 +130,180 @@ const ModuleRegistry = {
     }
 };
 
+// 加载动画管理器
+const LoadingManager = {
+    init() {
+        const banner = document.getElementById('loadingBanner');
+        if (!banner) return;
+        
+        // 模拟加载过程
+        setTimeout(() => {
+            this.completeLoading();
+        }, 1500);
+    },
+    
+    completeLoading() {
+        const banner = document.getElementById('loadingBanner');
+        if (!banner) return;
+        
+        // 添加跳出动画
+        banner.classList.add('jump-out');
+        
+        // 动画结束后隐藏
+        setTimeout(() => {
+            banner.style.display = 'none';
+        }, 800);
+    }
+};
+
+// 鼠标特效管理器
+const CursorEffectsManager = {
+    container: null,
+    lastHeartTime: 0,
+    heartInterval: 100, // 爱心生成间隔(ms)
+    
+    init() {
+        this.container = document.getElementById('cursorEffects');
+        if (!this.container) return;
+        
+        // 检测是否为触摸设备
+        const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+        
+        if (!isTouchDevice) {
+            // 桌面端：鼠标移动生成爱心
+            document.addEventListener('mousemove', (e) => this.onMouseMove(e));
+        }
+        
+        // 所有设备：点击生成爆炸效果
+        document.addEventListener('click', (e) => this.onClick(e));
+    },
+    
+    onMouseMove(e) {
+        const now = Date.now();
+        if (now - this.lastHeartTime < this.heartInterval) return;
+        
+        this.lastHeartTime = now;
+        this.createHeart(e.clientX, e.clientY);
+    },
+    
+    createHeart(x, y) {
+        const heart = document.createElement('span');
+        heart.className = 'cursor-heart';
+        heart.textContent = ['💕', '💖', '💗', '💓'][Math.floor(Math.random() * 4)];
+        heart.style.left = `${x}px`;
+        heart.style.top = `${y}px`;
+        
+        this.container.appendChild(heart);
+        
+        setTimeout(() => {
+            if (heart.parentNode) {
+                heart.parentNode.removeChild(heart);
+            }
+        }, 1000);
+    },
+    
+    onClick(e) {
+        this.createExplosion(e.clientX, e.clientY);
+    },
+    
+    createExplosion(x, y) {
+        const explosion = document.createElement('div');
+        explosion.className = 'click-explosion';
+        explosion.style.left = `${x}px`;
+        explosion.style.top = `${y}px`;
+        
+        const emojis = ['✨', '⭐', '💫', '🌟', '💖', '💕'];
+        const count = 8;
+        
+        for (let i = 0; i < count; i++) {
+            const span = document.createElement('span');
+            span.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            const angle = (360 / count) * i;
+            const distance = 30 + Math.random() * 20;
+            const tx = Math.cos(angle * Math.PI / 180) * distance;
+            const ty = Math.sin(angle * Math.PI / 180) * distance;
+            span.style.setProperty('--tx', `${tx}px`);
+            span.style.setProperty('--ty', `${ty}px`);
+            explosion.appendChild(span);
+        }
+        
+        this.container.appendChild(explosion);
+        
+        setTimeout(() => {
+            if (explosion.parentNode) {
+                explosion.parentNode.removeChild(explosion);
+            }
+        }, 600);
+    }
+};
+
+// 动态背景管理器
+const DynamicBackgroundManager = {
+    init() {
+        this.createClouds();
+        this.createStars();
+        this.createRainbow();
+    },
+    
+    createClouds() {
+        const container = document.createElement('div');
+        container.className = 'floating-clouds';
+        
+        const cloudEmojis = ['☁️', '🌸', '🎈', '🌺'];
+        const cloudCount = 5;
+        
+        for (let i = 0; i < cloudCount; i++) {
+            const cloud = document.createElement('span');
+            cloud.className = 'cloud';
+            cloud.textContent = cloudEmojis[Math.floor(Math.random() * cloudEmojis.length)];
+            cloud.style.top = `${10 + Math.random() * 60}%`;
+            cloud.style.animationDuration = `${20 + Math.random() * 20}s`;
+            cloud.style.animationDelay = `${Math.random() * 10}s`;
+            container.appendChild(cloud);
+        }
+        
+        document.body.appendChild(container);
+    },
+    
+    createStars() {
+        const container = document.createElement('div');
+        container.className = 'twinkling-stars';
+        
+        const starCount = 20;
+        
+        for (let i = 0; i < starCount; i++) {
+            const star = document.createElement('span');
+            star.className = 'star';
+            star.textContent = ['✨', '⭐', '💫'][Math.floor(Math.random() * 3)];
+            star.style.left = `${Math.random() * 100}%`;
+            star.style.top = `${Math.random() * 100}%`;
+            star.style.animationDelay = `${Math.random() * 2}s`;
+            container.appendChild(star);
+        }
+        
+        document.body.appendChild(container);
+    },
+    
+    createRainbow() {
+        const rainbow = document.createElement('div');
+        rainbow.className = 'rainbow-bg';
+        document.body.appendChild(rainbow);
+    }
+};
+
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
+    // 初始化加载动画
+    LoadingManager.init();
+    
     // 初始化爱心背景
     HeartsManager.init();
+    
+    // 初始化鼠标特效
+    CursorEffectsManager.init();
+    
+    // 初始化动态背景
+    DynamicBackgroundManager.init();
     
     // 初始化所有注册的模块
     ModuleRegistry.initAll();

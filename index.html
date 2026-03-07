@@ -9,8 +9,19 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    <!-- 加载动画横幅 -->
+    <div id="loadingBanner" class="loading-banner">
+        <div class="loading-content">
+            <span class="loading-ribbon">🎀</span>
+            <span class="loading-text">正在加载大福的玩具房...</span>
+        </div>
+    </div>
+    
     <!-- 爱心背景装饰 -->
     <div class="hearts-container" id="heartsContainer"></div>
+    
+    <!-- 鼠标特效容器 -->
+    <div id="cursorEffects" class="cursor-effects"></div>
     
     <!-- 大门界面 -->
     <div id="gatePage" class="gate-page">
@@ -673,7 +684,8 @@
         <!-- 页脚 -->
         <footer class="footer">
             <p>Made with <i class="fas fa-heart"></i> by 大福 | 积木式架构，自由组合</p>
-            <p class="version">Version 2.0.0 | 作者：一只大福🎉</p>
+            <p class="version">Version 2.1.0 | 作者：一只大福🎉</p>
+            <p class="credits">致谢：🍄 | 使用AI Agent工具搭建</p>
             <p class="github-link">
                 <a href="https://github.com/hwdez8/dafu-toy-room" target="_blank" rel="noopener noreferrer">
                     <i class="fab fa-github"></i> 开源地址：github.com/hwdez8/dafu-toy-room

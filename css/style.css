@@ -38,6 +38,194 @@ body {
 }
 
 /* ========================================
+   加载动画横幅
+   ======================================== */
+.loading-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    background: linear-gradient(90deg, #ff6b9d, #ffc2d1, #ff6b9d);
+    background-size: 200% 100%;
+    animation: loadingGradient 2s ease infinite;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.loading-banner.hide {
+    transform: translateY(-100%);
+}
+
+@keyframes loadingGradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+.loading-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.loading-ribbon {
+    font-size: 2rem;
+    animation: loadingBounce 0.6s ease infinite;
+    display: inline-block;
+}
+
+@keyframes loadingBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.loading-text {
+    color: white;
+    font-weight: 600;
+    font-size: 1.1rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 加载完成跳出动画 */
+.loading-banner.jump-out {
+    animation: jumpOut 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+@keyframes jumpOut {
+    0% { transform: translateY(0); }
+    30% { transform: translateY(20px) scale(1.05); }
+    100% { transform: translateY(-150%) scale(0.9); }
+}
+
+/* ========================================
+   鼠标特效
+   ======================================== */
+.cursor-effects {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9998;
+}
+
+.cursor-heart {
+    position: absolute;
+    font-size: 1.2rem;
+    pointer-events: none;
+    animation: cursorHeartFloat 1s ease-out forwards;
+}
+
+@keyframes cursorHeartFloat {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.5);
+    }
+}
+
+.click-explosion {
+    position: absolute;
+    pointer-events: none;
+}
+
+.click-explosion span {
+    position: absolute;
+    font-size: 1rem;
+    animation: explode 0.6s ease-out forwards;
+}
+
+@keyframes explode {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--tx), var(--ty)) scale(0.3);
+    }
+}
+
+/* ========================================
+   动态背景 - 云朵、星星、彩虹
+   ======================================== */
+.floating-clouds {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.cloud {
+    position: absolute;
+    font-size: 3rem;
+    opacity: 0.6;
+    animation: floatCloud linear infinite;
+}
+
+@keyframes floatCloud {
+    0% { transform: translateX(-100px); }
+    100% { transform: translateX(calc(100vw + 100px)); }
+}
+
+.twinkling-stars {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.star {
+    position: absolute;
+    font-size: 1rem;
+    animation: twinkle 2s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+}
+
+.rainbow-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 182, 193, 0.1) 0%,
+        rgba(255, 218, 185, 0.1) 20%,
+        rgba(255, 255, 186, 0.1) 40%,
+        rgba(186, 255, 201, 0.1) 60%,
+        rgba(186, 225, 255, 0.1) 80%,
+        rgba(219, 186, 255, 0.1) 100%
+    );
+    pointer-events: none;
+    z-index: 0;
+    animation: rainbowShift 10s ease infinite;
+}
+
+@keyframes rainbowShift {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 0.8; }
+}
+
+/* ========================================
    爱心背景动画
    ======================================== */
 .hearts-container {
@@ -1985,6 +2173,47 @@ textarea {
     transform: translateY(-10px) scale(1.02);
     box-shadow: 0 20px 40px rgba(255, 107, 157, 0.25);
     border-color: var(--primary-color);
+}
+
+/* ========================================
+   卡片3D悬停效果
+   ======================================== */
+.gate-card-3d {
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gate-card-3d:hover {
+    transform: perspective(1000px) rotateY(10deg) rotateX(5deg) translateZ(20px);
+}
+
+.gate-card-glow {
+    position: relative;
+}
+
+.gate-card-glow::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #ff6b9d, #ffc2d1, #a8e6cf, #ffd93d, #ff6b9d);
+    background-size: 400% 400%;
+    border-radius: var(--border-radius);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    animation: glowRotate 3s ease infinite;
+}
+
+.gate-card-glow:hover::after {
+    opacity: 1;
+}
+
+@keyframes glowRotate {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
 }
 
 .gate-card:hover::before {
