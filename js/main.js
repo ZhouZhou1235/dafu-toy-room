@@ -133,19 +133,152 @@ const ModuleRegistry = {
 // 加载动画管理器
 const LoadingManager = {
     banner: null,
+    progressBar: null,
+    tipsElement: null,
+    progress: 0,
+    tipIndex: 0,
+    tipInterval: null,
+    progressInterval: null,
+    
+    // 装修提示列表
+    tips: [
+        { emoji: '🏗️', text: '大福正在搬积木...' },
+        { emoji: '🎨', text: '给墙壁刷上粉色油漆...' },
+        { emoji: '🧹', text: '打扫玩具房的每个角落...' },
+        { emoji: '🎀', text: '系上可爱的蝴蝶结...' },
+        { emoji: '🪄', text: '施展魔法布置家具...' },
+        { emoji: '🌸', text: '摆放新鲜的花朵...' },
+        { emoji: '✨', text: '撒上闪闪发光的星星...' },
+        { emoji: '🎮', text: '调试各种游戏设备...' },
+        { emoji: '🐱', text: '召唤小猫咪来帮忙...' },
+        { emoji: '🍰', text: '准备美味的下午茶...' },
+        { emoji: '💡', text: '点亮温暖的灯光...' },
+        { emoji: '🎵', text: '播放轻快的音乐...' },
+        { emoji: '🪞', text: '擦拭镜子让它闪闪发亮...' },
+        { emoji: '🧸', text: '把毛绒玩具排排坐...' },
+        { emoji: '🎪', text: '搭建马戏团帐篷...' },
+        { emoji: '🌈', text: '挂上彩虹色的窗帘...' },
+        { emoji: '🔮', text: '给水晶球充能...' },
+        { emoji: '📚', text: '整理书架上的故事书...' },
+        { emoji: '🎈', text: '吹起五颜六色的气球...' },
+        { emoji: '💝', text: '把爱心贴满整个房间...' }
+    ],
     
     init() {
         this.banner = document.getElementById('loadingBanner');
+        this.progressBar = document.getElementById('loadingProgressBar');
+        this.tipsElement = document.getElementById('loadingTips');
+        
         if (!this.banner) return;
         
-        // 模拟加载过程（2秒后完成）
+        // 开始进度条动画
+        this.startProgress();
+        // 开始提示轮换
+        this.startTipsRotation();
+        
+        // 2.5秒后完成加载
         setTimeout(() => {
             this.complete();
-        }, 2000);
+        }, 2500);
+    },
+    
+    startProgress() {
+        // 进度条动画 - 不均匀增长，模拟真实加载
+        const updateProgress = () => {
+            if (this.progress >= 100) {
+                clearInterval(this.progressInterval);
+                return;
+            }
+            
+            // 随机增加进度，前快后慢
+            let increment;
+            if (this.progress < 30) {
+                increment = Math.random() * 8 + 3; // 3-11%
+            } else if (this.progress < 60) {
+                increment = Math.random() * 5 + 2; // 2-7%
+            } else if (this.progress < 85) {
+                increment = Math.random() * 3 + 1; // 1-4%
+            } else {
+                increment = Math.random() * 2 + 0.5; // 0.5-2.5%
+            }
+            
+            this.progress = Math.min(100, this.progress + increment);
+            
+            if (this.progressBar) {
+                this.progressBar.style.width = this.progress + '%';
+            }
+        };
+        
+        // 每80ms更新一次进度
+        this.progressInterval = setInterval(updateProgress, 80);
+    },
+    
+    startTipsRotation() {
+        // 打乱提示顺序
+        this.shuffleTips();
+        
+        // 立即显示第一条
+        this.updateTip();
+        
+        // 每150ms轮换一次提示，快速变换效果
+        this.tipInterval = setInterval(() => {
+            this.tipIndex = (this.tipIndex + 1) % this.tips.length;
+            this.updateTip();
+        }, 150);
+        
+        // 加载完成前逐渐减慢速度
+        setTimeout(() => {
+            clearInterval(this.tipInterval);
+            this.tipInterval = setInterval(() => {
+                this.tipIndex = (this.tipIndex + 1) % this.tips.length;
+                this.updateTip();
+            }, 300);
+        }, 1500);
+    },
+    
+    shuffleTips() {
+        // Fisher-Yates 洗牌算法
+        for (let i = this.tips.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [this.tips[i], this.tips[j]] = [this.tips[j], this.tips[i]];
+        }
+    },
+    
+    updateTip() {
+        if (!this.tipsElement) return;
+        
+        const tip = this.tips[this.tipIndex];
+        
+        // 添加淡出效果
+        this.tipsElement.style.opacity = '0';
+        this.tipsElement.style.transform = 'translateY(10px)';
+        
+        setTimeout(() => {
+            this.tipsElement.textContent = `${tip.emoji} ${tip.text}`;
+            // 淡入效果
+            this.tipsElement.style.opacity = '1';
+            this.tipsElement.style.transform = 'translateY(0)';
+        }, 50);
     },
     
     complete() {
         if (!this.banner) return;
+        
+        // 停止所有动画
+        clearInterval(this.progressInterval);
+        clearInterval(this.tipInterval);
+        
+        // 确保进度条到100%
+        if (this.progressBar) {
+            this.progressBar.style.width = '100%';
+        }
+        
+        // 显示完成提示
+        if (this.tipsElement) {
+            this.tipsElement.textContent = '✨ 装修完成！欢迎光临~';
+            this.tipsElement.style.color = '#ff6b9d';
+            this.tipsElement.style.fontWeight = 'bold';
+        }
         
         // 添加完成动画类
         this.banner.classList.add('complete');
