@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎀 大福玩具房 - 排队中</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text x=%2250%22 y=%2250%22 dominant-baseline=%22central%22 text-anchor=%22middle%22 font-size=%2280%22>🎀</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #fff5f7 0%, #ffeef2 50%, #fff0f3 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(255, 107, 157, 0.2);
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #ff6b9d, #ffd93d, #a8e6cf, #ff6b9d);
+            border-radius: 32px;
+            z-index: -1;
+            animation: borderRotate 3s linear infinite;
+        }
+        
+        @keyframes borderRotate {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+        
+        .ribbon {
+            font-size: 80px;
+            display: inline-block;
+            animation: bounce 1s ease infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        h1 {
+            color: #ff6b9d;
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+        
+        .message {
+            color: #666;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        
+        .queue-info {
+            background: linear-gradient(135deg, #fff5f7, #ffe4ec);
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .queue-number {
+            font-size: 3rem;
+            color: #ff6b9d;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .queue-label {
+            color: #888;
+            font-size: 0.9rem;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b9d, #ffd93d);
+            border-radius: 5px;
+            animation: progress 2s ease-in-out infinite;
+        }
+        
+        @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+        
+        .tips {
+            background: rgba(255, 217, 61, 0.2);
+            padding: 15px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+        
+        .tips-title {
+            color: #ff6b9d;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .tips-list {
+            list-style: none;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .tips-list li {
+            margin: 5px 0;
+        }
+        
+        .tips-list li::before {
+            content: '🎀 ';
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #ff6b9d, #ff8fab);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 107, 157, 0.4);
+        }
+        
+        .footer {
+            margin-top: 30px;
+            color: #999;
+            font-size: 0.8rem;
+        }
+        
+        /* 飘浮装饰 */
+        .floating {
+            position: fixed;
+            font-size: 30px;
+            opacity: 0.3;
+            animation: float 10s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(10deg); }
+        }
+        
+        .floating:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+        .floating:nth-child(2) { top: 20%; right: 15%; animation-delay: 2s; }
+        .floating:nth-child(3) { bottom: 20%; left: 20%; animation-delay: 4s; }
+        .floating:nth-child(4) { bottom: 10%; right: 10%; animation-delay: 6s; }
+    </style>
+</head>
+<body>
+    <!-- 飘浮装饰 -->
+    <div class="floating">🎀</div>
+    <div class="floating">✨</div>
+    <div class="floating">💕</div>
+    <div class="floating">🌟</div>
+    
+    <div class="container">
+        <div class="ribbon">🎀</div>
+        <h1>玩具房太热闹啦！</h1>
+        <p class="message">
+            现在有好多小朋友在玩，<br>
+            请稍等片刻，马上就能进来啦～
+        </p>
+        
+        <div class="queue-info">
+            <div class="queue-label">当前排队人数</div>
+            <div class="queue-number">30+</div>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+            <div class="queue-label">正在努力安排入场...</div>
+        </div>
+        
+        <div class="tips">
+            <div class="tips-title">等待时可以：</div>
+            <ul class="tips-list">
+                <li>深呼吸，放松心情</li>
+                <li>想想今天想玩什么游戏</li>
+                <li>准备和大福聊天的话题</li>
+            </ul>
+        </div>
+        
+        <button class="refresh-btn" onclick="location.reload()">
+            🔄 刷新试试
+        </button>
+        
+        <div class="footer">
+            Version 2.1.0 | 作者：一只大福🎉<br>
+            致谢：🍄 | 使用AI Agent 工具搭建
+        </div>
+    </div>
+    
+    <script>
+        // 每5秒自动刷新检查
+        setTimeout(() => {
+            location.reload();
+        }, 5000);
+    </script>
+</body>
+</html>

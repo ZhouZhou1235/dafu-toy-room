@@ -22,7 +22,10 @@ const CONFIG = {
     maxRequestSize: 1024 * 1024, // 1MB 最大请求体
     allowedOrigins: ['http://localhost:3000', 'http://127.0.0.1:3000', 'https://fufud.cc', 'https://www.fufud.cc', 'http://194.41.36.137:3000'],
     rateLimitWindow: 60000, // 1分钟
-    rateLimitMax: 100 // 每分钟最大请求数
+    rateLimitMax: 100, // 每分钟最大请求数
+    // 限流配置
+    maxConcurrentUsers: 30, // 最大并发访问人数
+    queueTimeout: 30000 // 排队超时时间（30秒）
 };
 
 // ========================================
@@ -189,6 +192,72 @@ function recordModuleUsage(moduleName) {
     serverStats.total.lastUpdated = new Date().toISOString();
     saveStats();
 }
+
+// ========================================
+// 并发访问限制系统
+// ========================================
+const ConnectionManager = {
+    activeConnections: new Map(), // 存储活跃连接
+    waitingQueue: [], // 等待队列
+    
+    // 添加新连接
+    addConnection(clientIP) {
+        const now = Date.now();
+        
+        // 清理超时的连接（超过5分钟无活动）
+        this.cleanupConnections();
+        
+        // 检查是否已达到最大并发数
+        if (this.activeConnections.size >= CONFIG.maxConcurrentUsers) {
+            return false; // 拒绝连接
+        }
+        
+        // 添加活跃连接
+        this.activeConnections.set(clientIP, {
+            ip: clientIP,
+            connectedAt: now,
+            lastActivity: now
+        });
+        
+        return true;
+    },
+    
+    // 更新连接活动
+    updateActivity(clientIP) {
+        if (this.activeConnections.has(clientIP)) {
+            this.activeConnections.get(clientIP).lastActivity = Date.now();
+        }
+    },
+    
+    // 移除连接
+    removeConnection(clientIP) {
+        this.activeConnections.delete(clientIP);
+    },
+    
+    // 清理超时连接
+    cleanupConnections() {
+        const now = Date.now();
+        const timeout = 5 * 60 * 1000; // 5分钟超时
+        
+        for (const [ip, conn] of this.activeConnections) {
+            if (now - conn.lastActivity > timeout) {
+                this.activeConnections.delete(ip);
+                log(`清理超时连接: ${ip}`);
+            }
+        }
+    },
+    
+    // 获取当前连接数
+    getActiveCount() {
+        this.cleanupConnections();
+        return this.activeConnections.size;
+    },
+    
+    // 检查是否已满
+    isFull() {
+        return this.getActiveCount() >= CONFIG.maxConcurrentUsers;
+    }
+};
 
 // 获取统计数据的API
 function handleStatsAPI(req, res) {
@@ -678,6 +747,43 @@ const server = http.createServer((req, res) => {
     const pathname = parsedUrl.pathname;
     
     log(`${req.method} ${pathname}`);
+    
+    // 并发访问限制检查（仅对主页面和API）
+    const isMainPage = pathname === '/' || pathname === '/index.html';
+    const isAPI = pathname.startsWith('/api/');
+    
+    if (isMainPage || isAPI) {
+        // 检查是否已达到最大并发数
+        if (ConnectionManager.isFull()) {
+            // 检查该IP是否已在活跃连接中
+            if (!ConnectionManager.activeConnections.has(clientIP)) {
+                // 返回限流页面
+                const rateLimitPage = path.join(__dirname, 'rate-limit.html');
+                fs.readFile(rateLimitPage, (err, data) => {
+                    if (err) {
+                        res.writeHead(503, { 'Content-Type': 'text/html; charset=utf-8' });
+                        res.end('<h1>服务繁忙，请稍后再试</h1>');
+                    } else {
+                        res.writeHead(503, { 'Content-Type': 'text/html; charset=utf-8' });
+                        res.end(data);
+                    }
+                });
+                log(`并发限制触发: ${clientIP}, 当前连接数: ${ConnectionManager.getActiveCount()}`, 'warn');
+                return;
+            }
+        }
+        
+        // 添加或更新连接
+        ConnectionManager.addConnection(clientIP);
+        
+        // 请求结束时移除连接
+        res.on('finish', () => {
+            ConnectionManager.removeConnection(clientIP);
+        });
+        
+        // 定期更新活动状态
+        ConnectionManager.updateActivity(clientIP);
+    }
     
     // API路由
     if (pathname === '/api/chat' && req.method === 'POST') {
